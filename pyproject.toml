@@ -1,0 +1,52 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pytest-markdown-report"
+version = "0.1.0"
+description = "Token-efficient markdown test reports for LLM-based TDD agents"
+readme = "README.md"
+requires-python = ">=3.8"
+license = "MIT"
+authors = [
+    { name = "David Allouche" },
+]
+classifiers = [
+    "Framework :: Pytest",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+]
+dependencies = [
+    "pytest>=7.0",
+]
+
+[project.entry-points.pytest11]
+markdown_report = "pytest_markdown_report"
+
+[project.urls]
+Homepage = "https://github.com/davidallouche/pytest-markdown-report"
+Repository = "https://github.com/davidallouche/pytest-markdown-report"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pytest_markdown_report"]
+
+[tool.hatch.envs.default]
+dependencies = [
+    "pytest>=7.0",
+]
+
+[tool.hatch.envs.default.scripts]
+test = "pytest {args}"
+test-cov = "pytest --cov=pytest_markdown_report {args}"
+
+[tool.hatch.envs.dev]
+dependencies = [
+    "pytest>=7.0",
+    "pytest-cov",
+]
