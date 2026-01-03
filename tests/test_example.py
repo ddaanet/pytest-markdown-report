@@ -1,4 +1,7 @@
 """Example test suite demonstrating pytest-markdown-report output."""
+
+from typing import Never
+
 import pytest
 
 
@@ -9,7 +12,7 @@ def validate(input_str):
 
 class Parser:
     """Example parser class."""
-    
+
     def extract_tokens(self, data):
         """Extract tokens from data."""
         return data[0]  # Will fail on empty list
@@ -19,8 +22,8 @@ parser = Parser()
 
 
 # Parametrized test with failure
-@pytest.mark.parametrize("input,expected", [("", False), ("x", True)])
-def test_invalid_input(input, expected):
+@pytest.mark.parametrize(("input", "expected"), [("", False), ("x", True)])
+def test_invalid_input(input, expected) -> None:
     """Test input validation."""
     assert validate(input) == expected
 
@@ -32,7 +35,7 @@ def empty_data():
     return []
 
 
-def test_edge_case(empty_data):
+def test_edge_case(empty_data) -> None:
     """Test edge case with empty data."""
     result = parser.extract_tokens(empty_data)
     assert result is not None
@@ -40,30 +43,29 @@ def test_edge_case(empty_data):
 
 # Skipped test
 @pytest.mark.skip(reason="Not implemented yet")
-def test_future_feature():
+def test_future_feature() -> None:
     """Test future feature."""
-    pass
 
 
 # xfail test
 @pytest.mark.xfail(reason="Bug #123", strict=True)
-def test_known_bug():
+def test_known_bug() -> Never:
     """Test known bug."""
     raise ValueError("Known issue")
 
 
 # Passing tests
-def test_simple():
+def test_simple() -> None:
     """Simple passing test."""
     assert 1 + 1 == 2
 
 
-def test_validation_pass():
+def test_validation_pass() -> None:
     """Test validation with valid input."""
-    assert validate("valid") == True
+    assert validate("valid")
 
 
-def test_critical_path():
+def test_critical_path() -> None:
     """Test critical functionality."""
     result = {"status": "success", "timestamp": 123456}
     assert result["status"] == "success"

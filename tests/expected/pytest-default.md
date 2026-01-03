@@ -4,7 +4,7 @@
 
 ## Failures
 
-### test_example.py::test_edge_case FAILED
+### tests/test_example.py::test_edge_case FAILED
 
 ```python
 test_example.py:37: in test_edge_case
@@ -16,11 +16,11 @@ test_example.py:15: in extract_tokens
 E   IndexError: list index out of range
 ```
 
-### test_example.py::test_future_feature SKIPPED
+### tests/test_example.py::test_future_feature SKIPPED
 
 **Reason:** Not implemented yet
 
-### test_example.py::test_known_bug XFAIL
+### tests/test_example.py::test_known_bug XFAIL
 
 **Reason:** Bug #123
 

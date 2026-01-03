@@ -1,6 +1,7 @@
 # pytest-markdown-report
 
-Token-efficient markdown test reports for LLM-based TDD agents. Replaces pytest's default console output with markdown-formatted results.
+Token-efficient markdown test reports for LLM-based TDD agents. Replaces pytest's
+default console output with markdown-formatted results.
 
 ## Installation
 
@@ -20,7 +21,8 @@ poetry add --group dev pytest
 
 ## Usage
 
-Once installed, the plugin automatically replaces pytest's console output with markdown format:
+Once installed, the plugin automatically replaces pytest's console output with markdown
+format:
 
 ```bash
 # Markdown output to console (default behavior)
@@ -33,16 +35,19 @@ pytest --markdown-report=report.md
 ### Verbosity Modes
 
 **Default**: Summary + failures
+
 ```bash
 pytest
 ```
 
 **Verbose (`-v`)**: Add passed test list
+
 ```bash
 pytest -v
 ```
 
 **Quiet (`-q`)**: Summary + rerun suggestion only
+
 ```bash
 pytest -q
 ```
@@ -50,16 +55,19 @@ pytest -q
 ### Options
 
 **Save to file**:
+
 ```bash
 pytest --markdown-report=report.md
 ```
 
 **Custom rerun command**:
+
 ```bash
 pytest --markdown-rerun-cmd="just test --lf"
 ```
 
 **Disable rerun suggestion**:
+
 ```bash
 pytest --markdown-rerun-cmd=""
 ```
@@ -67,7 +75,8 @@ pytest --markdown-rerun-cmd=""
 ## Output Format
 
 ### Default Mode
-```markdown
+
+````markdown
 # Test Report
 
 **Summary**: 2/5 passed | 3 failed | 0 skipped
@@ -75,24 +84,30 @@ pytest --markdown-rerun-cmd=""
 ## Failures
 
 ### test_validation.py::test_invalid_input[empty] ✗
+
 **Error**: AssertionError
+
 ```python
 >       assert validate(input) == expected
 E       AssertionError: assert True == False
 
 test_validation.py:42: AssertionError
 ```
-```
+````
 
 ### Verbose Mode (-v)
+
 Adds passed test list after failures:
+
 ```markdown
 ## Passes
+
 - test_feature.py::test_critical_path ✓
 - test_basic.py::test_simple ✓
 ```
 
 ### Quiet Mode (-q)
+
 ```markdown
 **Summary**: 2/5 passed | 3 failed | 0 skipped
 
@@ -118,7 +133,8 @@ Re-run failed: `just test --lf`
 
 ## Integration
 
-The plugin automatically formats all pytest output as markdown. Use with role-specific agents:
+The plugin automatically formats all pytest output as markdown. Use with role-specific
+agents:
 
 ```bash
 # Implementation agent sees failures only (console)
@@ -131,7 +147,8 @@ pytest -v --markdown-report=review.md --markdown-rerun-cmd="just role-review"
 pytest -q
 ```
 
-**Note**: Use `pytest --durations=N` separately for performance analysis (this will also be in markdown format).
+**Note**: Use `pytest --durations=N` separately for performance analysis (this will also
+be in markdown format).
 
 ## License
 

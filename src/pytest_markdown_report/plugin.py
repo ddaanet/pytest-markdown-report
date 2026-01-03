@@ -1,8 +1,10 @@
 """Core plugin implementation for pytest-markdown-report."""
+
 import io
 import re
 import sys
 from pathlib import Path
+
 import pytest
 
 
@@ -14,19 +16,19 @@ def escape_markdown(text):
     - * : Bold/italic
     - _ : Italic (particularly important for code like variable_names)
     """
-    special_chars = r'[]*_'
-    return re.sub(f'([{re.escape(special_chars)}])', r'\\\1', text)
+    special_chars = r"[]*_"
+    return re.sub(f"([{re.escape(special_chars)}])", r"\\\1", text)
 
 
 @pytest.hookimpl(tryfirst=True)
-def pytest_load_initial_conftests(early_config, parser, args):
+def pytest_load_initial_conftests(early_config, parser, args) -> None:
     """Set traceback style before loading plugins."""
     # Set --tb=short as default if not specified
     if not any(arg.startswith("--tb") for arg in args):
         args.insert(0, "--tb=short")
 
 
-def pytest_addoption(parser):
+def pytest_addoption(parser) -> None:
     """Add command-line options."""
     group = parser.getgroup("markdown-report")
     group.addoption(
@@ -47,7 +49,7 @@ def pytest_addoption(parser):
     )
 
 
-def pytest_configure(config):
+def pytest_configure(config) -> None:
     """Register the plugin."""
     # Always register markdown reporter
     config._markdown_report = MarkdownReport(config)
@@ -57,7 +59,7 @@ def pytest_configure(config):
     config._markdown_report._redirect_output()
 
 
-def pytest_unconfigure(config):
+def pytest_unconfigure(config) -> None:
     """Unregister the plugin."""
     markdown_report = getattr(config, "_markdown_report", None)
     if markdown_report:
@@ -68,7 +70,7 @@ def pytest_unconfigure(config):
 class MarkdownReport:
     """Generate token-efficient markdown test reports."""
 
-    def __init__(self, config):
+    def __init__(self, config) -> None:
         self.config = config
         markdown_path = config.getoption("markdown_report_path")
         self.markdown_path = Path(markdown_path) if markdown_path else None
@@ -89,7 +91,7 @@ class MarkdownReport:
         self._original_stderr = None
         self._capture_buffer = None
 
-    def _redirect_output(self):
+    def _redirect_output(self) -> None:
         """Redirect stdout/stderr to suppress pytest output."""
         self._original_stdout = sys.stdout
         self._original_stderr = sys.stderr
@@ -97,23 +99,25 @@ class MarkdownReport:
         sys.stdout = self._capture_buffer
         sys.stderr = self._capture_buffer
 
-    def _restore_output(self):
+    def _restore_output(self) -> None:
         """Restore original stdout/stderr."""
         if self._original_stdout:
             sys.stdout = self._original_stdout
             sys.stderr = self._original_stderr
 
-    def pytest_collectreport(self, report):
+    def pytest_collectreport(self, report) -> None:
         """Capture collection errors."""
         if report.failed:
             self.collection_errors.append(report)
 
-    def pytest_runtest_logreport(self, report):
+    def pytest_runtest_logreport(self, report) -> None:
         """Collect test reports."""
-        if report.when == "call" or (report.when == "setup" and report.outcome == "skipped"):
+        if report.when == "call" or (
+            report.when == "setup" and report.outcome == "skipped"
+        ):
             self.reports.append(report)
 
-    def pytest_sessionfinish(self, session):
+    def pytest_sessionfinish(self, session) -> None:
         """Generate markdown report at session end."""
         # Restore output before generating report
         self._restore_output()
@@ -153,7 +157,7 @@ class MarkdownReport:
         if lines and lines[-1] == "":
             lines = lines[:-1]
         report_text = "\n".join(lines) + "\n"
-        print(report_text, end="")
+        sys.stdout.write(report_text)
 
         # Also write to file if specified
         if self.markdown_path:
@@ -170,9 +174,9 @@ class MarkdownReport:
 
         for report in self.collection_errors:
             # Get the file path from the report
-            if hasattr(report, 'nodeid') and report.nodeid:
+            if hasattr(report, "nodeid") and report.nodeid:
                 lines.append(f"### {report.nodeid}")
-            elif hasattr(report, 'fspath'):
+            elif hasattr(report, "fspath"):
                 lines.append(f"### {report.fspath}")
             else:
                 lines.append("### Collection Error")
@@ -192,7 +196,9 @@ class MarkdownReport:
         total_xfailed = len(self.xfailed)
 
         # Build summary parts
-        parts = [f"{total_passed}/{total_passed + total_failed + total_skipped + total_xfailed} passed"]
+        parts = [
+            f"{total_passed}/{total_passed + total_failed + total_skipped + total_xfailed} passed"
+        ]
         if total_failed > 0:
             parts.append(f"{total_failed} failed")
         if total_skipped > 0:
@@ -215,7 +221,9 @@ class MarkdownReport:
         total_xfailed = len(self.xfailed)
 
         # Build summary parts
-        parts = [f"{total_passed}/{total_passed + total_failed + total_skipped + total_xfailed} passed"]
+        parts = [
+            f"{total_passed}/{total_passed + total_failed + total_skipped + total_xfailed} passed"
+        ]
         if total_failed > 0:
             parts.append(f"{total_failed} failed")
         if total_skipped > 0:
@@ -266,10 +274,13 @@ class MarkdownReport:
         """Format a skipped test."""
         lines = [f"### {report.nodeid} SKIPPED", ""]
         if hasattr(report, "longrepr") and report.longrepr:
-            reason = str(report.longrepr[2]) if isinstance(report.longrepr, tuple) else str(report.longrepr)
+            reason = (
+                str(report.longrepr[2])
+                if isinstance(report.longrepr, tuple)
+                else str(report.longrepr)
+            )
             # Remove "Skipped: " prefix if present
-            if reason.startswith("Skipped: "):
-                reason = reason[9:]
+            reason = reason.removeprefix("Skipped: ")
             lines.append(f"**Reason:** {escape_markdown(reason)}")
             lines.append("")
         return lines

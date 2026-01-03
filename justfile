@@ -7,6 +7,33 @@ help:
 test *ARGS:
     uv run pytest tests/test_output_expectations.py {{ ARGS }}
 
+# Format code
+format:
+    #!/usr/bin/env bash -euo pipefail
+    tmpfile=$(mktemp tmp-fmt-XXXXXX)
+    trap "rm $tmpfile" EXIT
+    patch-and-print() {
+        patch "$@" | sed -Ene "/^patching file '/s/^[^']+'([^']+)'/\\1/p"
+    }
+    uv run ruff check -q --fix-only --diff | patch-and-print >> "$tmpfile" || true
+    uv run ruff format -q --diff | patch-and-print >> "$tmpfile" || true
+    # docformatter --diff applies the change *and* outputs the diff, so we need to
+    # reverse the patch (-R) and dry run (-C), and it prefixes the path with before and
+    # after (-p1 ignores the first component of the path). Hence `patch -RCp1`.
+    docformatter --diff src tests | patch-and-print -RCp1 >> "$tmpfile" || true
+
+    git ls-files | grep '\.md$' | uv run claudeutils markdown >> "$tmpfile"
+    dprint -c .dprint.json check --list-different \
+    | sed "s|^$(pwd)/||g" >> "$tmpfile" || true
+    dprint -c .dprint.json fmt -L warn
+    modified=$(sort --unique < "$tmpfile")
+    if [ -n "$modified" ] ; then
+        bold=$'\033[1m'; nobold=$'\033[22m'
+        red=$'\033[31m'; resetfg=$'\033[39m'
+        echo "${bold}${red}**Reformatted files:**"
+        echo "$modified" | sed "s|^|${bold}${red}  - ${nobold}${resetfg}|"
+    fi
+
 # Create release: tag, build tarball, upload to PyPI and GitHub
 release bump='patch': _fail_if_claudecode test
     #!/usr/bin/env bash -euo pipefail
