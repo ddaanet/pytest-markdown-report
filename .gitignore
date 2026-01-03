@@ -1,35 +1,17 @@
-# Python
 __pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-
-# Virtual environments
-.venv/
-venv/
-ENV/
-env/
-
-# Testing
-.pytest_cache/
-.coverage
-htmlcov/
-test_*.md
-
-# IDEs
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# OS
-.DS_Store
 .AppleDouble
+.DS_Store
+.idea/
 .LSOverride
-
-# Build artifacts
-build/
-dist/
+.vscode/
 *.egg-info/
+*.swo
+*.swp
+*~
+/.env
+/.envrc
+/.venv/
+/build/
+/dist/
+/list/
+/tmp/
