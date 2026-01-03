@@ -4,13 +4,18 @@ Token-efficient markdown test reports for LLM-based TDD agents. Replaces pytest'
 
 ## Installation
 
+Add to the development dependencies of your project.
+
 ```bash
 pip install pytest-markdown-report
 ```
 
-Or install from source:
 ```bash
-pip install .
+uv add --dev pytest-markdown-report
+```
+
+```bash
+poetry add --group dev pytest
 ```
 
 ## Usage
