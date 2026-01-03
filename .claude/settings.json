@@ -1,4 +1,8 @@
 {
+  "attribution": {
+    "commit": "",
+    "pr": ""
+  },
   "permissions": {
     "allow": [
       "Bash(git show:*)",
@@ -7,21 +11,17 @@
       "Bash(uv run pytest:*)",
       "Bash(claudeutils tokens:*)"
     ],
-    "ask": [
-      "Bash(git commit:*)"
-    ],
     "deny": [
       "NotebookEdit"
+    ],
+    "ask": [
+      "Bash(git commit:*)"
     ]
-  },
-  "attribution": {
-    "commit": "",
-    "pr": ""
   },
   "enabledPlugins": {
     "superpowers@superpowers-marketplace": false,
     "code-review@claude-plugins-official": false,
-    "commit-commands@claude-plugins-official": false,
+    "commit-commands@claude-plugins-official": true,
     "explanatory-output-style@claude-plugins-official": false,
     "context7@claude-plugins-official": false,
     "feature-dev@claude-plugins-official": false,

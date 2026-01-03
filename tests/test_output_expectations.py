@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 
-def run_pytest(*args):
+def run_pytest(*args: str) -> str:
     """Run pytest with given args and return output."""
     cmd = [sys.executable, "-m", "pytest", *list(args)]
     result = subprocess.run(

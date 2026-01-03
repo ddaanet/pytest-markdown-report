@@ -7,10 +7,10 @@
 ### tests/test_example.py::test_edge_case FAILED
 
 ```python
-test_example.py:37: in test_edge_case
+test_example.py:40: in test_edge_case
     result = parser.extract_tokens(empty_data)
              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-test_example.py:15: in extract_tokens
+test_example.py:18: in extract_tokens
     return data[0]  # Will fail on empty list
            ^^^^^^^
 E   IndexError: list index out of range
@@ -25,7 +25,7 @@ E   IndexError: list index out of range
 **Reason:** Bug #123
 
 ```python
-test_example.py:52: in test_known_bug
+test_example.py:54: in test_known_bug
     raise ValueError("Known issue")
 E   ValueError: Known issue
 ```

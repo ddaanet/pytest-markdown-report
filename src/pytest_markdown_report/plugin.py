@@ -6,9 +6,11 @@ import sys
 from pathlib import Path
 
 import pytest
+from _pytest.config import Config
+from _pytest.reports import TestReport
 
 
-def escape_markdown(text):
+def escape_markdown(text: str) -> str:
     """Escape markdown special characters in user-provided text.
 
     Only escapes inline formatting characters that can have real impact:
@@ -21,14 +23,18 @@ def escape_markdown(text):
 
 
 @pytest.hookimpl(tryfirst=True)
-def pytest_load_initial_conftests(early_config, parser, args) -> None:
+def pytest_load_initial_conftests(
+    early_config: Config,  # noqa: ARG001 - Required by pytest hook spec
+    parser: object,  # noqa: ARG001 - Required by pytest hook spec
+    args: list[str],
+) -> None:
     """Set traceback style before loading plugins."""
     # Set --tb=short as default if not specified
     if not any(arg.startswith("--tb") for arg in args):
         args.insert(0, "--tb=short")
 
 
-def pytest_addoption(parser) -> None:
+def pytest_addoption(parser: object) -> None:
     """Add command-line options."""
     group = parser.getgroup("markdown-report")
     group.addoption(
@@ -49,28 +55,35 @@ def pytest_addoption(parser) -> None:
     )
 
 
-def pytest_configure(config) -> None:
+def pytest_configure(config: Config) -> None:
     """Register the plugin."""
     # Always register markdown reporter
-    config._markdown_report = MarkdownReport(config)
-    config.pluginmanager.register(config._markdown_report)
+    # Pytest-recommended pattern for storing plugin state on config object
+    config._markdown_report = MarkdownReport(config)  # noqa: SLF001
+    config.pluginmanager.register(config._markdown_report)  # noqa: SLF001
 
     # Redirect stdout/stderr to suppress pytest output
-    config._markdown_report._redirect_output()
+    config._markdown_report._redirect_output()  # noqa: SLF001
 
 
-def pytest_unconfigure(config) -> None:
+def pytest_unconfigure(config: Config) -> None:
     """Unregister the plugin."""
     markdown_report = getattr(config, "_markdown_report", None)
     if markdown_report:
-        del config._markdown_report
+        # Clean up plugin state stored on config object
+        del config._markdown_report  # noqa: SLF001
         config.pluginmanager.unregister(markdown_report)
 
 
 class MarkdownReport:
     """Generate token-efficient markdown test reports."""
 
-    def __init__(self, config) -> None:
+    def __init__(self, config: Config) -> None:
+        """Initialize markdown report generator.
+
+        Args:
+            config: pytest Config object with markdown report options
+        """
         self.config = config
         markdown_path = config.getoption("markdown_report_path")
         self.markdown_path = Path(markdown_path) if markdown_path else None
@@ -105,24 +118,30 @@ class MarkdownReport:
             sys.stdout = self._original_stdout
             sys.stderr = self._original_stderr
 
-    def pytest_collectreport(self, report) -> None:
+    def pytest_collectreport(self, report: TestReport) -> None:
         """Capture collection errors."""
         if report.failed:
             self.collection_errors.append(report)
 
-    def pytest_runtest_logreport(self, report) -> None:
+    def pytest_runtest_logreport(self, report: TestReport) -> None:
         """Collect test reports."""
         if report.when == "call" or (
             report.when == "setup" and report.outcome == "skipped"
         ):
             self.reports.append(report)
 
-    def pytest_sessionfinish(self, session) -> None:
+    def pytest_sessionfinish(
+        self,
+        session: object,  # noqa: ARG002 - Required by pytest hook spec
+    ) -> None:
         """Generate markdown report at session end."""
-        # Restore output before generating report
         self._restore_output()
+        self._categorize_reports()
+        lines = self._build_report_lines()
+        self._write_report(lines)
 
-        # Categorize reports
+    def _categorize_reports(self) -> None:
+        """Categorize test reports by outcome."""
         for report in self.reports:
             # Check wasxfail first, as xfail tests also have skipped=True
             if hasattr(report, "wasxfail"):
@@ -137,7 +156,8 @@ class MarkdownReport:
             elif report.failed:
                 self.failed.append(report)
 
-        # Generate report
+    def _build_report_lines(self) -> list[str]:
+        """Build report lines based on test results and verbosity mode."""
         lines = []
 
         # Collection errors take priority
@@ -152,7 +172,10 @@ class MarkdownReport:
             if self.verbosity > 0:
                 lines.extend(self._generate_passes())
 
-        # Output to stdout
+        return lines
+
+    def _write_report(self, lines: list[str]) -> None:
+        """Write report to stdout and optionally to file."""
         # Remove trailing empty line if present
         if lines and lines[-1] == "":
             lines = lines[:-1]
@@ -163,7 +186,7 @@ class MarkdownReport:
         if self.markdown_path:
             self.markdown_path.write_text(report_text)
 
-    def _generate_collection_errors(self):
+    def _generate_collection_errors(self) -> list[str]:
         """Generate collection errors report."""
         lines = ["# Collection Errors", ""]
 
@@ -188,17 +211,16 @@ class MarkdownReport:
 
         return lines
 
-    def _generate_summary(self):
+    def _generate_summary(self) -> list[str]:
         """Generate summary line."""
         total_passed = len(self.passed)
         total_failed = len(self.failed) + len(self.xpassed)
         total_skipped = len(self.skipped)
         total_xfailed = len(self.xfailed)
+        total = total_passed + total_failed + total_skipped + total_xfailed
 
         # Build summary parts
-        parts = [
-            f"{total_passed}/{total_passed + total_failed + total_skipped + total_xfailed} passed"
-        ]
+        parts = [f"{total_passed}/{total} passed"]
         if total_failed > 0:
             parts.append(f"{total_failed} failed")
         if total_skipped > 0:
@@ -213,17 +235,16 @@ class MarkdownReport:
             "",
         ]
 
-    def _generate_quiet(self):
+    def _generate_quiet(self) -> list[str]:
         """Generate quiet mode output."""
         total_passed = len(self.passed)
         total_failed = len(self.failed) + len(self.xpassed)
         total_skipped = len(self.skipped)
         total_xfailed = len(self.xfailed)
+        total = total_passed + total_failed + total_skipped + total_xfailed
 
         # Build summary parts
-        parts = [
-            f"{total_passed}/{total_passed + total_failed + total_skipped + total_xfailed} passed"
-        ]
+        parts = [f"{total_passed}/{total} passed"]
         if total_failed > 0:
             parts.append(f"{total_failed} failed")
         if total_skipped > 0:
@@ -238,7 +259,7 @@ class MarkdownReport:
 
         return lines
 
-    def _generate_failures(self):
+    def _generate_failures(self) -> list[str]:
         """Generate failures section."""
         lines = ["## Failures", ""]
 
@@ -253,7 +274,7 @@ class MarkdownReport:
 
         return lines
 
-    def _format_failure(self, report, symbol="FAILED"):
+    def _format_failure(self, report: TestReport, symbol: str = "FAILED") -> list[str]:
         """Format a failed test."""
         lines = [f"### {report.nodeid} {symbol}", ""]
 
@@ -263,14 +284,14 @@ class MarkdownReport:
 
         return lines
 
-    def _format_xpass(self, report):
+    def _format_xpass(self, report: TestReport) -> list[str]:
         """Format an unexpected pass."""
         lines = [f"### {report.nodeid} ⚠ XPASS"]
         lines.append("**Unexpected pass** (expected to fail)")
         lines.append("")
         return lines
 
-    def _format_skip(self, report):
+    def _format_skip(self, report: TestReport) -> list[str]:
         """Format a skipped test."""
         lines = [f"### {report.nodeid} SKIPPED", ""]
         if hasattr(report, "longrepr") and report.longrepr:
@@ -285,7 +306,7 @@ class MarkdownReport:
             lines.append("")
         return lines
 
-    def _format_xfail(self, report):
+    def _format_xfail(self, report: TestReport) -> list[str]:
         """Format an expected failure."""
         lines = [f"### {report.nodeid} XFAIL", ""]
 
@@ -302,14 +323,13 @@ class MarkdownReport:
 
         return lines
 
-    def _generate_passes(self):
+    def _generate_passes(self) -> list[str]:
         """Generate passes section (verbose mode only)."""
         if not self.passed:
             return []
 
         lines = ["## Passes", ""]
-        for report in self.passed:
-            lines.append(f"- {report.nodeid}")
+        lines.extend(f"- {report.nodeid}" for report in self.passed)
         lines.append("")
 
         return lines

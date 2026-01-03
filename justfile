@@ -2,10 +2,29 @@
 help:
     @just --list --unsorted
 
+# Full development workflow
+[no-exit-message]
+dev: format check test
+
 # Run test suite
 [no-exit-message]
 test *ARGS:
     uv run pytest tests/test_output_expectations.py {{ ARGS }}
+
+# Format, check with complexity disabled, test
+[no-exit-message]
+lint: format
+    uv run ruff check -q --ignore=C901
+    docformatter -c src tests
+    uv run mypy
+    uv run pytest tests/test_output_expectations.py
+
+# Check code style
+[no-exit-message]
+check:
+    uv run ruff check -q
+    docformatter -c src tests
+    uv run mypy
 
 # Format code
 format:

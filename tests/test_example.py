@@ -5,15 +5,15 @@ from typing import Never
 import pytest
 
 
-def validate(input_str):
-    """Example validation function."""
+def validate(input_str: str) -> bool:
+    """Validate input string."""
     return len(input_str) > 0
 
 
 class Parser:
     """Example parser class."""
 
-    def extract_tokens(self, data):
+    def extract_tokens(self, data: list[str]) -> str:
         """Extract tokens from data."""
         return data[0]  # Will fail on empty list
 
@@ -22,20 +22,20 @@ parser = Parser()
 
 
 # Parametrized test with failure
-@pytest.mark.parametrize(("input", "expected"), [("", False), ("x", True)])
-def test_invalid_input(input, expected) -> None:
+@pytest.mark.parametrize(("input_data", "expected"), [("", False), ("x", True)])
+def test_invalid_input(input_data: str, expected: bool) -> None:  # noqa: FBT001
     """Test input validation."""
-    assert validate(input) == expected
+    assert validate(input_data) == expected
 
 
 # Test with fixture and failure
 @pytest.fixture
-def empty_data():
+def empty_data() -> list[str]:
     """Provide empty data."""
     return []
 
 
-def test_edge_case(empty_data) -> None:
+def test_edge_case(empty_data: list[str]) -> None:
     """Test edge case with empty data."""
     result = parser.extract_tokens(empty_data)
     assert result is not None
