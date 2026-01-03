@@ -41,15 +41,15 @@ pytest --markdown-rerun-cmd="just test --lf"
 
 ### Plugin Registration Flow
 The plugin uses pytest's standard plugin registration mechanism and suppresses default output:
-1. `pytest_addoption()` registers CLI options (`--markdown-report`, `--markdown-rerun-cmd`)
-2. `pytest_cmdline_preparse()` adds `-p no:terminal` to disable pytest's terminal reporter
+1. `pytest_load_initial_conftests()` sets `--tb=short` as the default traceback style
+2. `pytest_addoption()` registers CLI options (`--markdown-report`, `--markdown-rerun-cmd`)
 3. `pytest_configure()` instantiates `MarkdownReport`, registers it with the plugin manager, and redirects stdout/stderr to suppress any remaining pytest output
 4. `pytest_unconfigure()` cleans up the plugin registration
 
 ### Output Suppression Mechanism
-The plugin completely replaces pytest's console output using a two-pronged approach:
-1. **Terminal Reporter Suppression**: Uses `-p no:terminal` flag to prevent pytest's terminal reporter from loading
-2. **Stream Redirection**: Redirects `sys.stdout` and `sys.stderr` to a capture buffer in `pytest_configure()` to suppress any remaining pytest output, then restores the original streams in `pytest_sessionfinish()` to display the markdown report
+The plugin completely suppresses pytest's console output using stream redirection:
+1. **Stream Redirection**: Redirects `sys.stdout` and `sys.stderr` to a capture buffer in `_redirect_output()` (called from `pytest_configure()`) to suppress pytest's default output
+2. **Output Restoration**: Restores the original streams in `_restore_output()` (called from `pytest_sessionfinish()`) before printing the markdown report
 
 ### Report Generation Pipeline
 The `MarkdownReport` class orchestrates report generation:
@@ -65,21 +65,21 @@ The `MarkdownReport` class orchestrates report generation:
 
 ### Report Categorization Logic
 Test outcomes are categorized with specific handling:
-- `skipped`: Tests marked with `@pytest.mark.skip` or conditional skips
-- `xfailed`: Expected failures (`@pytest.mark.xfail` that fail as expected)
+- `skipped`: Tests marked with `@pytest.mark.skip` or conditional skips (displays reason)
+- `xfailed`: Expected failures (`@pytest.mark.xfail` that fail as expected, displays reason from decorator)
 - `xpassed`: Unexpected passes (xfail tests that pass, counted as failures in summary)
-- `failed`: Regular test failures
-- `passed`: Successful tests
-
-### Error Extraction
-`_extract_error_type()` parses longreprtext to find lines starting with "E       " that contain "Error" to extract the exception type (e.g., "AssertionError", "ValueError").
+- `failed`: Regular test failures (displays full traceback in code block)
+- `passed`: Successful tests (only shown in verbose mode)
 
 ## Key Design Decisions
 
 **Token Efficiency**: The plugin minimizes token usage by:
 - Showing only failures by default (not passed tests)
-- Using text labels (FAILED, SKIPPED, XFAIL) instead of symbols for clarity (saves 1 token per symbol vs Unicode)
+- Using text labels (FAILED, SKIPPED, XFAIL) instead of Unicode symbols (saves 1 token per status vs ✗, ⊘, ⚠)
 - Condensing summary to single line format with comma separators
+- Using `--tb=short` by default for concise tracebacks
+- Placing colons inside bold markers (`**Label:**` vs `**Label**:` saves 1 token per label)
+- Note: Current implementation escapes markdown special characters in reasons, which adds ~11% token overhead (see session.md for analysis)
 
 **Verbosity Modes**: Three modes controlled by pytest's `-v`/`-q` flags allow adaptation to different agent workflows (implementation vs. review).
 

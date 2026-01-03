@@ -249,22 +249,6 @@ class MarkdownReport:
 
         return lines
 
-    def _extract_error_type(self, report):
-        """Extract error type from report."""
-        if not report.longreprtext:
-            return None
-
-        # Look for "Error:" pattern in traceback
-        for line in report.longreprtext.split("\n"):
-            if line.startswith("E       ") and "Error" in line:
-                # Extract error type
-                error = line[8:].strip()
-                if ":" in error:
-                    return error.split(":")[0]
-                return error
-
-        return None
-
     def _generate_passes(self):
         """Generate passes section (verbose mode only)."""
         if not self.passed:

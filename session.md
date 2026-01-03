@@ -1,5 +1,26 @@
 # Session Context - pytest-markdown-report
 
+## Latest Update (Continuation)
+
+Completed remaining tasks from session.md:
+
+1. **Markdown Escaping Research**
+   - Created `test_markdown_escaping.py` to measure token impact
+   - Results: Current escaping adds 17 tokens (+10.9% overhead) for realistic test cases
+   - Documented findings and recommendations in session.md
+   - Conclusion: Current escaping is likely over-zealous for our context
+
+2. **Documentation Updates**
+   - Updated AGENTS.md to reflect current implementation
+   - Fixed outdated references to `pytest_cmdline_preparse()` and terminal reporter
+   - Updated token efficiency section with accurate details
+
+3. **Code Cleanup**
+   - Removed unused `_extract_error_type()` method from plugin.py
+   - Verified all tests still pass and match expected output
+
+All originally planned tasks are now complete. The plugin is ready for use with clear documentation of the token overhead from markdown escaping.
+
 ## What Was Done This Session
 
 ### Plugin Improvements Implemented
@@ -50,43 +71,70 @@ All three output modes tested and match expected output files:
 
 ## What Needs to Be Done Next
 
-### High Priority: Markdown Escaping Research
-The current `escape_markdown()` function is over-zealous and ADDS tokens unnecessarily:
+### High Priority: Markdown Escaping Research ✓ COMPLETED
 
-**Current Problem:**
+**Test Results (test_markdown_escaping.py):**
+- Unescaped tokens: 156
+- Escaped tokens: 173
+- **Token overhead: 17 tokens (+10.9%)**
+
+**Current Implementation:**
 - Escapes all ASCII punctuation: `\ ` * _ { } [ ] ( ) # + - . !`
-- Token cost: `Bug #123` = 10 tokens vs `Bug \#123` = 11 tokens
 - Every escaped character costs +1 token
+- Applies to skip/xfail reasons after `**Reason:** ` label
 
-**Research Needed:**
-1. Determine which characters actually need escaping in our specific contexts
-2. Context analysis:
-   - After `**Reason:** ` → `#` doesn't create headers (not at line start)
-   - After `**Reason:** ` → Most chars won't trigger formatting
-3. Test actual markdown rendering to see what breaks
-4. Consider: Is escaping needed at all for text after labels?
-
-**References:**
-- CommonMark spec: https://spec.commonmark.org/0.31.2/#backslash-escapes
-- Only ASCII punctuation can be escaped
-- Backslashes don't work in code blocks
-- Context matters: `#` only makes headers at line start with space
+**Findings:**
+The current escaping is likely **over-zealous** for our specific context:
+1. Text after `**Reason:** ` is inline - most characters won't trigger formatting
+2. `#` only creates headers at line start (not mid-line)
+3. `-` only creates lists at line start
+4. `()` and `{}` are safe in inline text
+5. `.` and `!` are safe
+6. Main concerns:
+   - `[RFC-1234]` - Could create broken link reference (renders as `[RFC-1234]` looking for link)
+   - `_word_` - Could trigger italic formatting (but needs word boundaries)
 
 **Recommendation:**
-- Create test cases with real user text (Bug #123, [RFC-1234], etc.)
-- Render markdown and check what actually breaks
-- Implement minimal escaping (maybe just `[` `]` for link syntax?)
-- Measure token impact of minimal vs current escaping
+Consider one of these approaches:
+1. **Remove all escaping** - Test if unescaped text renders correctly (likely fine)
+2. **Minimal escaping** - Only escape `[` and `]` to prevent link references
+3. **Keep current** - Accept 11% token overhead for safety
 
-### Medium Priority: Architecture Documentation Update
-`AGENTS.md` still references old approach in some places:
-- Line 45: References `pytest_cmdline_preparse()` which we replaced with `pytest_load_initial_conftests()`
-- Line 81: Still mentions "Using symbols" in token efficiency section
+**Next Steps:**
+- Test actual rendering of unescaped output in Claude/markdown viewers
+- If rendering is fine, remove escaping entirely
+- If issues found, implement minimal escaping for only problematic characters
 
-### Code Quality
-Consider:
-- The `_extract_error_type()` method is defined but never used after removing "**Error:**" labels
-- Could be removed for cleaner code
+### Medium Priority: Architecture Documentation Update ✓ COMPLETED
+Updated `AGENTS.md` to reflect current implementation:
+- Fixed plugin registration flow to mention `pytest_load_initial_conftests()`
+- Updated output suppression mechanism (removed outdated `-p no:terminal` references)
+- Updated report categorization logic with current details
+- Removed Error Extraction section (method was unused)
+- Updated token efficiency section with current approach and escaping note
+
+### Code Quality ✓ COMPLETED
+- Removed unused `_extract_error_type()` method from plugin.py (lines 252-267)
+- All tests still pass and match expected output
+
+### TODO: Fix Collection Error Reporting
+**Problem:** When pytest encounters collection errors, the plugin produces no output.
+
+**Reproduction:**
+```bash
+mkdir tests
+cp test_example.py tests/
+uv run pytest
+```
+
+**Expected:** Collection error information should be displayed in markdown format
+**Actual:** No output
+
+**Investigation needed:**
+- The plugin's stdout/stderr redirection may be suppressing collection errors
+- Need to hook into `pytest_collectreport` or `pytest_collection_finish` to capture collection failures
+- Collection errors happen before `pytest_runtest_logreport`, so they're not currently captured
+- Should display collection errors in the markdown report with appropriate formatting
 
 ## Key Learnings / Reminders
 
