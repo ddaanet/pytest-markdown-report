@@ -1,0 +1,71 @@
+"""Test that pytest output matches expected markdown files."""
+import subprocess
+import sys
+from pathlib import Path
+
+
+def run_pytest(*args):
+    """Run pytest with given args and return output."""
+    cmd = [sys.executable, "-m", "pytest"] + list(args)
+    result = subprocess.run(
+        cmd,
+        capture_output=True,
+        text=True,
+        cwd=Path(__file__).parent,
+    )
+    # Combine stdout and stderr as pytest outputs to both
+    return result.stdout + result.stderr
+
+
+def test_quiet_mode():
+    """Test quiet mode output matches expected."""
+    actual = run_pytest("test_example.py", "-q")
+    expected = Path("expected/pytest-quiet.md").read_text()
+    assert actual == expected, f"Quiet mode output mismatch:\nExpected:\n{expected}\n\nActual:\n{actual}"
+
+
+def test_default_mode():
+    """Test default mode output matches expected."""
+    actual = run_pytest("test_example.py")
+    expected = Path("expected/pytest-default.md").read_text()
+    assert actual == expected, f"Default mode output mismatch:\nExpected:\n{expected}\n\nActual:\n{actual}"
+
+
+def test_verbose_mode():
+    """Test verbose mode output matches expected."""
+    actual = run_pytest("test_example.py", "-v")
+    expected = Path("expected/pytest-verbose.md").read_text()
+    assert actual == expected, f"Verbose mode output mismatch:\nExpected:\n{expected}\n\nActual:\n{actual}"
+
+
+def test_collection_error():
+    """Test collection error output format."""
+    # Create a temporary file with syntax error
+    syntax_error_file = Path(__file__).parent / "test_collection_error_temp.py"
+    syntax_error_file.write_text("def test_bad(\n    pass\n")
+
+    try:
+        actual = run_pytest(str(syntax_error_file))
+
+        # Check for expected structure (paths vary by environment)
+        assert actual.startswith("# Collection Errors\n"), "Missing collection errors header"
+        assert "**1 collection error**" in actual, "Missing error count"
+        assert "### test_collection_error_temp.py" in actual, "Missing file name"
+        assert "```python" in actual, "Missing code block"
+        assert "SyntaxError: '(' was never closed" in actual, "Missing error message"
+        assert actual.endswith("```\n"), "Should end with code block"
+    finally:
+        # Clean up
+        syntax_error_file.unlink(missing_ok=True)
+
+
+def test_no_trailing_blank_lines():
+    """Verify all outputs end with single newline, not double."""
+    for mode, args in [
+        ("quiet", ["-q"]),
+        ("default", []),
+        ("verbose", ["-v"]),
+    ]:
+        actual = run_pytest("test_example.py", *args)
+        assert not actual.endswith("\n\n"), f"{mode} mode has trailing blank line"
+        assert actual.endswith("\n"), f"{mode} mode missing final newline"

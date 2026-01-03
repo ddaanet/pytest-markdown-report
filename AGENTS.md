@@ -15,14 +15,17 @@ pip install .
 
 ### Running Tests
 ```bash
-# Run all tests with markdown console output (default behavior)
-pytest
+# Verify output expectations (automated test suite)
+pytest test_output_expectations.py -v
+
+# Run example tests with markdown console output (default behavior)
+pytest test_example.py
 
 # Run tests verbosely (includes passed tests in report)
-pytest -v
+pytest test_example.py -v
 
 # Run tests quietly (summary + rerun suggestion only, no live progress)
-pytest -q
+pytest test_example.py -q
 
 # Run a single test
 pytest test_example.py::test_simple
@@ -86,6 +89,8 @@ Test outcomes are categorized with specific handling:
 **Rerun Integration**: The `--markdown-rerun-cmd` option enables custom workflow integration (e.g., `just` recipes) while defaulting to `pytest --lf`.
 
 ## Agent Guidelines
+
+**Output Verification**: Always run `pytest test_output_expectations.py -v` after making changes to verify output format matches expectations. This automated test suite validates quiet/default/verbose modes and collection error handling.
 
 **Token Count Verification**: Do not guess token counts. Always use `claudeutils tokens sonnet <file>` to verify actual token usage.
 
