@@ -7,19 +7,18 @@ name = "pytest-markdown-report"
 version = "0.0"
 description = "Token-efficient markdown test reports for LLM-based TDD agents"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.11"
 license = "MIT"
 authors = [
-    { name = "David Allouche" },
+    { name = "David Allouche", email = "david@ddaa.net" },
 ]
 classifiers = [
     "Framework :: Pytest",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "License :: OSI Approved :: MIT License",
 ]
 dependencies = [

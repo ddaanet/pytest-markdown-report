@@ -4,7 +4,7 @@ help:
 
 # Run test suite
 test:
-    uv run pytest test_example.py -v
+    uv run pytest test_output_expectations.py -v
 
 # Create release: tag, build tarball, upload to PyPI and GitHub
 release bump='patch': _fail_if_claudecode test
