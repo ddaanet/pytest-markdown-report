@@ -3,8 +3,9 @@ help:
     @just --list --unsorted
 
 # Run test suite
-test:
-    uv run pytest test_output_expectations.py -v
+[no-exit-message]
+test *ARGS:
+    uv run pytest tests/test_output_expectations.py {{ ARGS }}
 
 # Create release: tag, build tarball, upload to PyPI and GitHub
 release bump='patch': _fail_if_claudecode test

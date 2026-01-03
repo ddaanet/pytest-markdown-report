@@ -15,20 +15,25 @@ pip install .
 
 ### Running Tests
 ```bash
-# Verify output expectations (automated test suite)
-pytest test_output_expectations.py -v
+# Verify output expectations (automated test suite) - recommended
+just test
+
+# Pass additional pytest args to just test
+just test --lf          # Re-run only failed tests
+just test -vv           # Very verbose output
+just test --pdb         # Drop into debugger on failures
 
 # Run example tests with markdown console output (default behavior)
-pytest test_example.py
+pytest tests/test_example.py
 
 # Run tests verbosely (includes passed tests in report)
-pytest test_example.py -v
+pytest tests/test_example.py -v
 
 # Run tests quietly (summary + rerun suggestion only, no live progress)
-pytest test_example.py -q
+pytest tests/test_example.py -q
 
 # Run a single test
-pytest test_example.py::test_simple
+pytest tests/test_example.py::test_simple
 
 # Re-run only failed tests
 pytest --lf
@@ -90,7 +95,7 @@ Test outcomes are categorized with specific handling:
 
 ## Agent Guidelines
 
-**Output Verification**: Always run `pytest test_output_expectations.py -v` after making changes to verify output format matches expectations. This automated test suite validates quiet/default/verbose modes and collection error handling.
+**Output Verification**: Always run `pytest tests/test_output_expectations.py -v` after making changes to verify output format matches expectations. This automated test suite validates quiet/default/verbose modes and collection error handling.
 
 **Token Count Verification**: Do not guess token counts. Always use `claudeutils tokens sonnet <file>` to verify actual token usage.
 
