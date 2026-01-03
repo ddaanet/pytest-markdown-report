@@ -37,4 +37,3 @@ E   ValueError: Known issue
 - test_example.py::test_simple
 - test_example.py::test_validation_pass
 - test_example.py::test_critical_path
-

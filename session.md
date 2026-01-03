@@ -1,6 +1,30 @@
 # Session Context - pytest-markdown-report
 
-## Latest Update (Continuation)
+## Latest Update - 2026-01-03
+
+Implemented minimal markdown escaping and collection error reporting:
+
+1. **Reduced Markdown Escaping** (commit: fbac35e)
+   - Updated `escape_markdown()` to only escape critical inline characters: `[]*_`
+   - Removed unnecessary escaping of: `\ ` { } ( ) # + - . !`
+   - These characters don't trigger formatting in inline contexts
+   - Significantly reduces token overhead while maintaining safety
+   - Updated expected outputs to reflect unescaped `#` in "Bug #123"
+
+2. **Collection Error Reporting** (commit: 0d80b07)
+   - Added `pytest_collectreport` hook to capture collection failures
+   - Collection errors (syntax errors, import failures) now display in markdown format
+   - Format: "# Collection Errors" with error count and detailed traceback
+   - Collection errors take priority over normal test results
+
+3. **Trailing Blank Line Fix** (commit: 0d80b07)
+   - Fixed implementation to remove trailing empty string before joining lines
+   - All output now ends with single newline instead of double newline
+   - Updated expected/pytest-verbose.md to match
+
+All changes tested and committed. Plugin now handles collection errors gracefully.
+
+## Previous Update (Continuation)
 
 Completed remaining tasks from session.md:
 
@@ -117,24 +141,17 @@ Updated `AGENTS.md` to reflect current implementation:
 - Removed unused `_extract_error_type()` method from plugin.py (lines 252-267)
 - All tests still pass and match expected output
 
-### TODO: Fix Collection Error Reporting
-**Problem:** When pytest encounters collection errors, the plugin produces no output.
+### Collection Error Reporting ✓ COMPLETED
+**Solution:** Implemented `pytest_collectreport` hook to capture collection errors.
 
-**Reproduction:**
-```bash
-mkdir tests
-cp test_example.py tests/
-uv run pytest
-```
+**Changes Made:**
+- Added `collection_errors` list to MarkdownReport class
+- Implemented `pytest_collectreport()` to capture failed collection reports
+- Added `_generate_collection_errors()` to format collection errors in markdown
+- Collection errors take priority in report generation (shown instead of normal output)
+- Format displays error count, file path, and full traceback in code block
 
-**Expected:** Collection error information should be displayed in markdown format
-**Actual:** No output
-
-**Investigation needed:**
-- The plugin's stdout/stderr redirection may be suppressing collection errors
-- Need to hook into `pytest_collectreport` or `pytest_collection_finish` to capture collection failures
-- Collection errors happen before `pytest_runtest_logreport`, so they're not currently captured
-- Should display collection errors in the markdown report with appropriate formatting
+**Testing:** Verified with syntax error file - collection errors now display properly
 
 ## Key Learnings / Reminders
 

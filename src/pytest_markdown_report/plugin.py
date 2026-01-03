@@ -82,6 +82,7 @@ class MarkdownReport:
         self.skipped = []
         self.xfailed = []
         self.xpassed = []
+        self.collection_errors = []
 
         # For output redirection
         self._original_stdout = None
@@ -101,6 +102,11 @@ class MarkdownReport:
         if self._original_stdout:
             sys.stdout = self._original_stdout
             sys.stderr = self._original_stderr
+
+    def pytest_collectreport(self, report):
+        """Capture collection errors."""
+        if report.failed:
+            self.collection_errors.append(report)
 
     def pytest_runtest_logreport(self, report):
         """Collect test reports."""
@@ -130,7 +136,10 @@ class MarkdownReport:
         # Generate report
         lines = []
 
-        if self.quiet:
+        # Collection errors take priority
+        if self.collection_errors:
+            lines.extend(self._generate_collection_errors())
+        elif self.quiet:
             lines.extend(self._generate_quiet())
         else:
             lines.extend(self._generate_summary())
@@ -140,12 +149,40 @@ class MarkdownReport:
                 lines.extend(self._generate_passes())
 
         # Output to stdout
+        # Remove trailing empty line if present
+        if lines and lines[-1] == "":
+            lines = lines[:-1]
         report_text = "\n".join(lines) + "\n"
         print(report_text, end="")
 
         # Also write to file if specified
         if self.markdown_path:
             self.markdown_path.write_text(report_text)
+
+    def _generate_collection_errors(self):
+        """Generate collection errors report."""
+        lines = ["# Collection Errors", ""]
+
+        error_count = len(self.collection_errors)
+        plural = "error" if error_count == 1 else "errors"
+        lines.append(f"**{error_count} collection {plural}**")
+        lines.append("")
+
+        for report in self.collection_errors:
+            # Get the file path from the report
+            if hasattr(report, 'nodeid') and report.nodeid:
+                lines.append(f"### {report.nodeid}")
+            elif hasattr(report, 'fspath'):
+                lines.append(f"### {report.fspath}")
+            else:
+                lines.append("### Collection Error")
+            lines.append("")
+
+            # Add error details
+            if report.longreprtext:
+                lines.extend(["```python", report.longreprtext.strip(), "```", ""])
+
+        return lines
 
     def _generate_summary(self):
         """Generate summary line."""
