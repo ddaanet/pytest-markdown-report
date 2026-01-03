@@ -22,7 +22,7 @@ E   IndexError: list index out of range
 
 ### test_example.py::test_known_bug XFAIL
 
-**Reason:** Bug \#123
+**Reason:** Bug #123
 
 ```python
 test_example.py:52: in test_known_bug

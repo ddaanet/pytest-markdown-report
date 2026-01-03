@@ -7,9 +7,14 @@ import pytest
 
 
 def escape_markdown(text):
-    """Escape markdown special characters in user-provided text."""
-    # Escape: \ ` * _ { } [ ] ( ) # + - . !
-    special_chars = r'\\`*_{}[]()#+-.!'
+    """Escape markdown special characters in user-provided text.
+
+    Only escapes inline formatting characters that can have real impact:
+    - [ ] : Link references
+    - * : Bold/italic
+    - _ : Italic (particularly important for code like variable_names)
+    """
+    special_chars = r'[]*_'
     return re.sub(f'([{re.escape(special_chars)}])', r'\\\1', text)
 
 
