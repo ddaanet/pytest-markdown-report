@@ -1,10 +1,10 @@
 # Test Report
 
-**Summary**: 5/8 passed | 1 failed | 2 skipped
+**Summary:** 5/8 passed, 1 failed, 1 skipped, 1 xfail
 
 ## Failures
 
-### test_example.py::test_edge_case ✗
+### test_example.py::test_edge_case FAILED
 
 ```python
 test_example.py:37: in test_edge_case
@@ -16,13 +16,13 @@ test_example.py:15: in extract_tokens
 E   IndexError: list index out of range
 ```
 
-### test_example.py::test_future_feature ⊘
+### test_example.py::test_future_feature SKIPPED
 
-**Reason**: Skipped: Not implemented yet
+**Reason:** Not implemented yet
 
-### test_example.py::test_known_bug ⊘
+### test_example.py::test_known_bug XFAIL
 
-**Reason**: Bug \#123
+**Reason:** Bug \#123
 
 ```python
 test_example.py:52: in test_known_bug
@@ -32,9 +32,9 @@ E   ValueError: Known issue
 
 ## Passes
 
-- test_example.py::test_invalid_input[-False] ✓
-- test_example.py::test_invalid_input[x-True] ✓
-- test_example.py::test_simple ✓
-- test_example.py::test_validation_pass ✓
-- test_example.py::test_critical_path ✓
+- test_example.py::test_invalid_input[-False]
+- test_example.py::test_invalid_input[x-True]
+- test_example.py::test_simple
+- test_example.py::test_validation_pass
+- test_example.py::test_critical_path
 

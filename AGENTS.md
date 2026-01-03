@@ -78,9 +78,17 @@ Test outcomes are categorized with specific handling:
 
 **Token Efficiency**: The plugin minimizes token usage by:
 - Showing only failures by default (not passed tests)
-- Using symbols (✗, ✓, ⊘, ⚠) instead of verbose status text
-- Condensing summary to single line format
+- Using text labels (FAILED, SKIPPED, XFAIL) instead of symbols for clarity (saves 1 token per symbol vs Unicode)
+- Condensing summary to single line format with comma separators
 
 **Verbosity Modes**: Three modes controlled by pytest's `-v`/`-q` flags allow adaptation to different agent workflows (implementation vs. review).
 
 **Rerun Integration**: The `--markdown-rerun-cmd` option enables custom workflow integration (e.g., `just` recipes) while defaulting to `pytest --lf`.
+
+## Agent Guidelines
+
+**Token Count Verification**: Do not guess token counts. Always use `claudeutils tokens sonnet <file>` to verify actual token usage.
+
+**REMEMBER Directive**: When you see "REMEMBER:" in user messages, add the content to this AGENTS.md file in this section.
+
+**Handoff Protocol**: When asked to handoff to another agent, write context for the following agent to `session.md` in the repository root.

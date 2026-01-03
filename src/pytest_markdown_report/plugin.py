@@ -1,5 +1,24 @@
 """Core plugin implementation for pytest-markdown-report."""
+import io
+import re
+import sys
 from pathlib import Path
+import pytest
+
+
+def escape_markdown(text):
+    """Escape markdown special characters in user-provided text."""
+    # Escape: \ ` * _ { } [ ] ( ) # + - . !
+    special_chars = r'\\`*_{}[]()#+-.!'
+    return re.sub(f'([{re.escape(special_chars)}])', r'\\\1', text)
+
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_load_initial_conftests(early_config, parser, args):
+    """Set traceback style before loading plugins."""
+    # Set --tb=short as default if not specified
+    if not any(arg.startswith("--tb") for arg in args):
+        args.insert(0, "--tb=short")
 
 
 def pytest_addoption(parser):
@@ -29,6 +48,9 @@ def pytest_configure(config):
     config._markdown_report = MarkdownReport(config)
     config.pluginmanager.register(config._markdown_report)
 
+    # Redirect stdout/stderr to suppress pytest output
+    config._markdown_report._redirect_output()
+
 
 def pytest_unconfigure(config):
     """Unregister the plugin."""
@@ -55,16 +77,25 @@ class MarkdownReport:
         self.skipped = []
         self.xfailed = []
         self.xpassed = []
-        self._tw_replaced = False
 
-    def pytest_runtest_logstart(self, nodeid, location):
-        """Unregister terminal reporter before first test runs."""
-        if not self._tw_replaced:
-            terminal_reporter = self.config.pluginmanager.get_plugin("terminalreporter")
-            if terminal_reporter:
-                # Unregister the terminal reporter to suppress its output
-                self.config.pluginmanager.unregister(terminal_reporter)
-                self._tw_replaced = True
+        # For output redirection
+        self._original_stdout = None
+        self._original_stderr = None
+        self._capture_buffer = None
+
+    def _redirect_output(self):
+        """Redirect stdout/stderr to suppress pytest output."""
+        self._original_stdout = sys.stdout
+        self._original_stderr = sys.stderr
+        self._capture_buffer = io.StringIO()
+        sys.stdout = self._capture_buffer
+        sys.stderr = self._capture_buffer
+
+    def _restore_output(self):
+        """Restore original stdout/stderr."""
+        if self._original_stdout:
+            sys.stdout = self._original_stdout
+            sys.stderr = self._original_stderr
 
     def pytest_runtest_logreport(self, report):
         """Collect test reports."""
@@ -73,15 +104,19 @@ class MarkdownReport:
 
     def pytest_sessionfinish(self, session):
         """Generate markdown report at session end."""
+        # Restore output before generating report
+        self._restore_output()
+
         # Categorize reports
         for report in self.reports:
-            if report.skipped:
-                self.skipped.append(report)
-            elif hasattr(report, "wasxfail"):
+            # Check wasxfail first, as xfail tests also have skipped=True
+            if hasattr(report, "wasxfail"):
                 if report.outcome == "passed":
                     self.xpassed.append(report)
                 else:
                     self.xfailed.append(report)
+            elif report.skipped:
+                self.skipped.append(report)
             elif report.passed:
                 self.passed.append(report)
             elif report.failed:
@@ -111,13 +146,22 @@ class MarkdownReport:
         """Generate summary line."""
         total_passed = len(self.passed)
         total_failed = len(self.failed) + len(self.xpassed)
-        total_skipped = len(self.skipped) + len(self.xfailed)
+        total_skipped = len(self.skipped)
+        total_xfailed = len(self.xfailed)
+
+        # Build summary parts
+        parts = [f"{total_passed}/{total_passed + total_failed + total_skipped + total_xfailed} passed"]
+        if total_failed > 0:
+            parts.append(f"{total_failed} failed")
+        if total_skipped > 0:
+            parts.append(f"{total_skipped} skipped")
+        if total_xfailed > 0:
+            parts.append(f"{total_xfailed} xfail")
 
         return [
             "# Test Report",
             "",
-            f"**Summary**: {total_passed}/{total_passed + total_failed + total_skipped} passed | "
-            f"{total_failed} failed | {total_skipped} skipped",
+            f"**Summary:** {', '.join(parts)}",
             "",
         ]
 
@@ -125,12 +169,19 @@ class MarkdownReport:
         """Generate quiet mode output."""
         total_passed = len(self.passed)
         total_failed = len(self.failed) + len(self.xpassed)
-        total_skipped = len(self.skipped) + len(self.xfailed)
+        total_skipped = len(self.skipped)
+        total_xfailed = len(self.xfailed)
 
-        lines = [
-            f"**Summary**: {total_passed}/{total_passed + total_failed + total_skipped} passed | "
-            f"{total_failed} failed | {total_skipped} skipped",
-        ]
+        # Build summary parts
+        parts = [f"{total_passed}/{total_passed + total_failed + total_skipped + total_xfailed} passed"]
+        if total_failed > 0:
+            parts.append(f"{total_failed} failed")
+        if total_skipped > 0:
+            parts.append(f"{total_skipped} skipped")
+        if total_xfailed > 0:
+            parts.append(f"{total_xfailed} xfail")
+
+        lines = [f"**Summary:** {', '.join(parts)}"]
 
         if self.rerun_cmd and total_failed > 0:
             lines.extend(["", f"Re-run failed: `{self.rerun_cmd}`"])
@@ -142,10 +193,7 @@ class MarkdownReport:
         lines = ["## Failures", ""]
 
         for report in self.failed:
-            lines.extend(self._format_failure(report, "✗"))
-
-        for report in self.xpassed:
-            lines.extend(self._format_xpass(report))
+            lines.extend(self._format_failure(report))
 
         for report in self.skipped:
             lines.extend(self._format_skip(report))
@@ -155,15 +203,9 @@ class MarkdownReport:
 
         return lines
 
-    def _format_failure(self, report, symbol="✗"):
+    def _format_failure(self, report, symbol="FAILED"):
         """Format a failed test."""
-        lines = [f"### {report.nodeid} {symbol}"]
-
-        # Extract error type
-        if report.longrepr:
-            error_type = self._extract_error_type(report)
-            if error_type:
-                lines.append(f"**Error**: {error_type}")
+        lines = [f"### {report.nodeid} {symbol}", ""]
 
         # Add traceback
         if report.longreprtext:
@@ -180,27 +222,30 @@ class MarkdownReport:
 
     def _format_skip(self, report):
         """Format a skipped test."""
-        lines = [f"### {report.nodeid} ⊘"]
+        lines = [f"### {report.nodeid} SKIPPED", ""]
         if hasattr(report, "longrepr") and report.longrepr:
             reason = str(report.longrepr[2]) if isinstance(report.longrepr, tuple) else str(report.longrepr)
-            lines.append(f"**Reason**: {reason}")
-        lines.append("")
+            # Remove "Skipped: " prefix if present
+            if reason.startswith("Skipped: "):
+                reason = reason[9:]
+            lines.append(f"**Reason:** {escape_markdown(reason)}")
+            lines.append("")
         return lines
 
     def _format_xfail(self, report):
         """Format an expected failure."""
-        lines = [f"### {report.nodeid} ⚠"]
+        lines = [f"### {report.nodeid} XFAIL", ""]
 
-        error_type = self._extract_error_type(report)
-        parts = ["**Expected to fail**"]
-        if error_type:
-            parts.append(f"**Error**: {error_type}")
-        lines.append(" | ".join(parts))
+        # Extract xfail reason from wasxfail attribute
+        if hasattr(report, "wasxfail") and report.wasxfail:
+            # wasxfail contains the reason string
+            reason = str(report.wasxfail)
+            if reason:
+                lines.append(f"**Reason:** {escape_markdown(reason)}")
+                lines.append("")
 
         if report.longreprtext:
             lines.extend(["```python", report.longreprtext.strip(), "```", ""])
-        else:
-            lines.append("")
 
         return lines
 
@@ -225,9 +270,9 @@ class MarkdownReport:
         if not self.passed:
             return []
 
-        lines = ["## Passes"]
+        lines = ["## Passes", ""]
         for report in self.passed:
-            lines.append(f"- {report.nodeid} ✓")
+            lines.append(f"- {report.nodeid}")
         lines.append("")
 
         return lines
