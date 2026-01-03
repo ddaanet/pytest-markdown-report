@@ -58,7 +58,7 @@ release bump='patch': _fail_if_claudecode test
     #!/usr/bin/env bash -euo pipefail
     {{ _bash-defs }}
     git diff --quiet HEAD || fail "Error: uncommitted changes"
-    release=$(version --bump {{ bump }} --dry-run)
+    release=$(uv version --bump {{ bump }} --dry-run)
     while read -re -p "Release $release? [y/n] " answer; do
         case "$answer" in
             y|Y) break;;
