@@ -3,6 +3,12 @@
 # - Only use `2>/dev/null` for probing (checking exit status when command has no quiet option)
 # - Only use `|| true` to continue after expected failures (required with `set -e`)
 
+# Enable bash tracing (set -x) for all recipes. Usage: just trace=true <recipe>
+trace := "false"
+
+# Shebang for bash recipes with optional tracing (use as: #!{{ shebang_bash }})
+shebang_bash := if trace == "true" { "/usr/bin/env bash -xeuo pipefail" } else { "/usr/bin/env bash -euo pipefail" }
+
 # List available recipes
 help:
     @just --list --unsorted
@@ -33,7 +39,7 @@ check:
 
 # Format code
 format:
-    #!/usr/bin/env bash -euo pipefail
+    #!{{ shebang_bash }}
     tmpfile=$(mktemp tmp-fmt-XXXXXX)
     trap "rm $tmpfile" EXIT
     patch-and-print() {
@@ -62,7 +68,7 @@ format:
 # Use --dry-run to perform local changes and verify external permissions without publishing
 # Use --rollback to revert local changes from a crashed dry-run
 release *ARGS: _fail_if_claudecode dev
-    #!/usr/bin/env bash -xeuo pipefail
+    #!{{ shebang_bash }}
     {{ _bash-defs }}
     DRY_RUN=false
     ROLLBACK=false
@@ -193,7 +199,7 @@ release *ARGS: _fail_if_claudecode dev
 [private]
 _bash-defs := '''
 COMMAND="''' + style('command') + '''"
-ERROR="{{ style('error') }}"
+ERROR="''' + style('error') + '''"
 GREEN=$'\033[32m'
 NORMAL="''' + NORMAL + '''"
 safe () { "$@" || status=false; }
@@ -207,7 +213,7 @@ fail () { echo "${ERROR}$*${NORMAL}"; exit 1; }
 [no-exit-message]
 [private]
 _fail_if_claudecode:
-    #!/usr/bin/env bash -euo pipefail
+    #!{{ shebang_bash }}
     if [ "${CLAUDECODE:-}" != "" ]; then
         echo -e '{{ style("error") }}⛔️ Denied: use agent recipes{{ NORMAL }}'
         exit 1
