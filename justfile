@@ -82,12 +82,17 @@ release *ARGS: _fail_if_claudecode dev
     # Cleanup function: revert commit and remove build artifacts
     cleanup_release() {
         local initial_head=$1
-        local version=$2
-        local silent=${3:-false}
+        local initial_branch=$2
+        local version=$3
+        local silent=${4:-false}
 
         [[ "$silent" == "false" ]] && echo "Reverting changes..."
         git reset --hard "$initial_head"
-        git checkout "$initial_head"
+        if [[ -n "$initial_branch" ]]; then
+            git checkout "$initial_branch"
+        else
+            git checkout "$initial_head"
+        fi
 
         # Remove only this version's build artifacts
         if [[ -n "$version" ]] && [[ -d dist ]]; then
@@ -99,14 +104,20 @@ release *ARGS: _fail_if_claudecode dev
 
     # Rollback mode
     if [[ "$ROLLBACK" == "true" ]]; then
-        # Verify no permanent changes
-        if git log @{u}.. --oneline | grep -q "🔖 Release"; then
-            fail "Error: release commit pushed to remote"
-        fi
-
+        # Check if there's a release commit at HEAD
         if git log -1 --format=%s | grep -q "🔖 Release"; then
+            # Verify no permanent changes (commit not pushed to remote)
+            # Skip check if HEAD is detached or has no upstream
+            if git symbolic-ref -q HEAD >/dev/null && git rev-parse --abbrev-ref @{u} >/dev/null 2>&1; then
+                # We're on a branch with upstream - check if release commit is unpushed
+                if ! git log @{u}.. --oneline | grep -q "🔖 Release"; then
+                    fail "Error: release commit already pushed to remote"
+                fi
+            fi
+
             version=$(git log -1 --format=%s | grep -oP '(?<=Release ).*')
-            cleanup_release "HEAD~1" "$version"
+            current_branch=$(git symbolic-ref -q --short HEAD || echo "")
+            cleanup_release "HEAD~1" "$current_branch" "$version"
             echo "${GREEN}✓${NORMAL} Rollback complete"
         else
             echo "${GREEN}✓${NORMAL} No release commit found"
@@ -116,8 +127,12 @@ release *ARGS: _fail_if_claudecode dev
 
     # Check preconditions
     git diff --quiet HEAD || fail "Error: uncommitted changes"
+    current_branch=$(git symbolic-ref -q --short HEAD || echo "")
+    [[ -z "$current_branch" ]] && fail "Error: not on a branch (HEAD is detached)"
+    main_branch=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@' || echo "main")
+    [[ "$current_branch" != "$main_branch" ]] && fail "Error: must be on $main_branch branch (currently on $current_branch)"
     release=$(uv version --bump "$BUMP" --dry-run)
-    tag="v${release}"
+    tag="v$(echo "$release" | awk '{print $NF}')"
     git rev-parse "$tag" >/dev/null 2>&1 && fail "Error: tag $tag already exists"
 
     # Interactive confirmation (skip in dry-run)
@@ -133,7 +148,8 @@ release *ARGS: _fail_if_claudecode dev
 
     if [[ "$DRY_RUN" == "true" ]]; then
         INITIAL_HEAD=$(git rev-parse HEAD)
-        trap 'cleanup_release "$INITIAL_HEAD" "${version:-}"; exit 1' ERR EXIT
+        INITIAL_BRANCH=$(git symbolic-ref -q --short HEAD || echo "")
+        trap 'cleanup_release "$INITIAL_HEAD" "$INITIAL_BRANCH" "${version:-}"; exit 1' ERR EXIT
     fi
 
     # Perform local changes: version bump, commit, build
@@ -147,6 +163,7 @@ release *ARGS: _fail_if_claudecode dev
     if [[ "$DRY_RUN" == "true" ]]; then
         # Verify external permissions
         git push --dry-run || fail "Error: cannot push to git remote"
+        [[ -z "${UV_PUBLISH_TOKEN:-}" ]] && fail "Error: UV_PUBLISH_TOKEN not set. Get token from https://pypi.org/manage/account/token/"
         uv publish --dry-run dist/* || fail "Error: cannot publish to PyPI"
         gh auth status >/dev/null 2>&1 || fail "Error: not authenticated with GitHub"
 
@@ -158,8 +175,7 @@ release *ARGS: _fail_if_claudecode dev
 
         # Normal cleanup
         trap - ERR EXIT
-        fail "Error: dry-run aborted"
-        cleanup_release "$INITIAL_HEAD" "$version"
+        cleanup_release "$INITIAL_HEAD" "$INITIAL_BRANCH" "$version"
         echo ""
         echo "Run: ${COMMAND}just release $BUMP${NORMAL}"
         exit 0
