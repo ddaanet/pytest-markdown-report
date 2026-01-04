@@ -61,18 +61,23 @@ format:
 # Create release: tag, build tarball, upload to PyPI and GitHub
 # Use --dry-run to perform local changes and verify external permissions without publishing
 # Use --rollback to revert local changes from a crashed dry-run
-release bump='patch' *FLAGS: _fail_if_claudecode test
-    #!/usr/bin/env bash -euo pipefail
+release *ARGS: _fail_if_claudecode dev
+    #!/usr/bin/env bash -xeuo pipefail
     {{ _bash-defs }}
     DRY_RUN=false
     ROLLBACK=false
-    for flag in {{ FLAGS }}; do
-        if [[ "$flag" == "--dry-run" ]]; then
-            DRY_RUN=true
-        elif [[ "$flag" == "--rollback" ]]; then
-            ROLLBACK=true
-        fi
+    BUMP=patch
+    # Parse flags and positional args
+    for arg in {{ ARGS }}; do
+        case "$arg" in
+            --dry-run) DRY_RUN=true ;;
+            --rollback) ROLLBACK=true ;;
+            --*) fail "Error: unknown option: $arg" ;;
+            *) [[ -n "${positional:-}" ]] && fail "Error: too many arguments"
+               positional=$arg ;;
+        esac
     done
+    [[ -n "${positional:-}" ]] && BUMP=$positional
 
     # Cleanup function: revert commit and remove build artifacts
     cleanup_release() {
@@ -111,7 +116,7 @@ release bump='patch' *FLAGS: _fail_if_claudecode test
 
     # Check preconditions
     git diff --quiet HEAD || fail "Error: uncommitted changes"
-    release=$(uv version --bump {{ bump }} --dry-run)
+    release=$(uv version --bump "$BUMP" --dry-run)
     tag="v${release}"
     git rev-parse "$tag" >/dev/null 2>&1 && fail "Error: tag $tag already exists"
 
@@ -132,7 +137,7 @@ release bump='patch' *FLAGS: _fail_if_claudecode test
     fi
 
     # Perform local changes: version bump, commit, build
-    visible uv version --bump {{ bump }}
+    visible uv version --bump "$BUMP"
     version=$(uv version)
     git add pyproject.toml uv.lock
     visible git commit -m "🔖 Release $version"
@@ -156,7 +161,7 @@ release bump='patch' *FLAGS: _fail_if_claudecode test
         fail "Error: dry-run aborted"
         cleanup_release "$INITIAL_HEAD" "$version"
         echo ""
-        echo "Run: ${COMMAND}just release {{ bump }}${NORMAL}"
+        echo "Run: ${COMMAND}just release $BUMP${NORMAL}"
         exit 0
     fi
 
