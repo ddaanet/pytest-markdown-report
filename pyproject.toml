@@ -120,7 +120,7 @@ allow_redefinition_new = true
 local_partial_types = true
 
 [[tool.mypy.overrides]]
-module = "test_*"
+module = "tests.*"
 disallow_untyped_defs = false
 disallow_incomplete_defs = false
 
