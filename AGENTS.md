@@ -82,28 +82,45 @@ The `MarkdownReport` class orchestrates report generation:
 
 1. **Output Redirection** (`_redirect_output`): Captures pytest's stdout/stderr to
    suppress default output
-2. **Collection Phase** (`pytest_runtest_logreport`): Captures test reports during the
-   "call" phase (or "setup" for skipped tests)
+2. **Collection Phase** (`pytest_runtest_logreport`): Captures test reports from all
+   phases (call, setup, teardown) when outcome is non-passing
 3. **Categorization** (`pytest_sessionfinish`): Sorts reports into
    passed/failed/skipped/xfailed/xpassed buckets
 4. **Formatting** (`pytest_sessionfinish`): Generates markdown based on verbosity mode:
    - **Quiet mode**: Summary + optional rerun command
-   - **Default mode**: Summary + failures section
-   - **Verbose mode**: Summary + failures + passes list
+   - **Default mode**: Summary + failures section + skipped section
+   - **Verbose mode**: Summary + failures + skipped + passes list
 5. **Output Restoration** (`pytest_sessionfinish`): Restores stdout/stderr and prints
    markdown report to console, optionally saves to file
 
 ### Report Categorization Logic
 
-Test outcomes are categorized with specific handling:
+Test outcomes are categorized and displayed in separate sections:
 
-- `skipped`: Tests marked with `@pytest.mark.skip` or conditional skips (displays
-  reason)
-- `xfailed`: Expected failures (`@pytest.mark.xfail` that fail as expected, displays
-  reason from decorator)
-- `xpassed`: Unexpected passes (xfail tests that pass, counted as failures in summary)
-- `failed`: Regular test failures (displays full traceback in code block)
-- `passed`: Successful tests (only shown in verbose mode)
+- `failed`: Regular test failures → **## Failures** section (full traceback)
+- `xfailed`: Expected failures (`@pytest.mark.xfail` that fail) → **## Failures**
+  section
+- `xpassed`: Unexpected passes (xfail tests that pass) → **## Failures** section
+  (counted as failures)
+- `skipped`: Tests marked skip or conditional skips → **## Skipped** section
+- `passed`: Successful tests → **## Passes** section (verbose mode only)
+
+**Section order:** Summary → Failures → Skipped → Passes
+
+**Setup/teardown handling:** Captures failures and errors from all test phases (setup,
+call, teardown). Setup errors and teardown failures appear in Failures section with full
+traceback.
+
+### Resource Management
+
+The plugin manages output streams to ensure clean operation:
+
+- **Output redirection**: Redirects `sys.stdout` and `sys.stderr` during test execution
+- **Idempotent restoration**: `_restore_output()` can be called multiple times safely
+- **Crash recovery**: `pytest_unconfigure()` calls `_restore_output()` to handle
+  interrupts (Ctrl+C)
+- **Buffer cleanup**: StringIO buffer explicitly closed to prevent memory leaks
+- **Error handling**: File I/O errors handled gracefully without crashing
 
 ## Key Design Decisions
 
@@ -127,6 +144,30 @@ integration (e.g., `just` recipes) while defaulting to `pytest --lf`.
 
 ## Agent Guidelines
 
+### Persistent vs Temporary Information
+
+**CRITICAL**: AGENTS.md is for persistent, long-lived information only.
+
+- ✅ **Do put in AGENTS.md**: Architecture, commands, design principles, testing
+  guidelines
+- ❌ **Do NOT put in AGENTS.md**: Current plans, active tasks, session-specific context,
+  implementation details
+
+**Current plans and tasks belong in:**
+
+- `plans/` directory - Implementation plans, code reviews, specifications
+- `session.md` - Current session context, handoff notes, temporary analysis
+
+**REMEMBER Directive**: When you see "REMEMBER:" in user messages, add the content to
+this AGENTS.md file ONLY if it's persistent information (architecture, commands,
+guidelines). If it's about current work or plans, put it in `session.md` or `plans/`
+instead.
+
+**Handoff Protocol**: When asked to handoff to another agent, write context for the
+following agent to `session.md` in the repository root.
+
+### Testing Guidelines
+
 **Output Verification**: Always run `pytest tests/test_output_expectations.py -v` after
 making changes to verify output format matches expectations. This automated test suite
 validates quiet/default/verbose modes and collection error handling.
@@ -134,8 +175,37 @@ validates quiet/default/verbose modes and collection error handling.
 **Token Count Verification**: Do not guess token counts. Always use
 `claudeutils tokens sonnet <file>` to verify actual token usage.
 
-**REMEMBER Directive**: When you see "REMEMBER:" in user messages, add the content to
-this AGENTS.md file in this section.
+## Documentation Organization
 
-**Handoff Protocol**: When asked to handoff to another agent, write context for the
-following agent to `session.md` in the repository root.
+**File naming conventions:**
+
+**Conventional files** (UPPERCASE.md):
+
+- `AGENTS.md` - Persistent agent guidance (this file)
+- `README.md` - Project overview and user documentation
+- `START.md` - Getting started guide (if exists)
+
+**Project documentation** (lowercase-dash.md):
+
+- `design-decisions.md` - Design decisions and rationale
+- `session.md` - Current session notes and handoff context
+
+**Plans directory** (`plans/` with lowercase-dash.md):
+
+- Implementation plans (phase-N-*.md)
+- Code reviews (code-review.md, code-review-YYYY-MM-DD.md)
+- Specifications and design documents
+- Implementation summaries
+
+**Directory structure:**
+
+```
+pytest-markdown-report/
+├── AGENTS.md              # Persistent agent guidance
+├── README.md              # User documentation
+├── design-decisions.md    # Persistent design rationale
+├── session.md             # Current session context
+├── plans/                 # Implementation plans and reviews
+│   ├── *.md               # All plan files
+└── src/                   # Source code
+```
