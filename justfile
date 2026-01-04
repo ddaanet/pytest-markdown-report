@@ -67,6 +67,7 @@ format:
 # Create release: tag, build tarball, upload to PyPI and GitHub
 # Use --dry-run to perform local changes and verify external permissions without publishing
 # Use --rollback to revert local changes from a crashed dry-run
+[no-exit-message]
 release *ARGS: _fail_if_claudecode dev
     #!{{ shebang_bash }}
     {{ _bash-defs }}
@@ -90,22 +91,18 @@ release *ARGS: _fail_if_claudecode dev
         local initial_head=$1
         local initial_branch=$2
         local version=$3
-        local silent=${4:-false}
-
-        [[ "$silent" == "false" ]] && echo "Reverting changes..."
-        git reset --hard "$initial_head"
+        visible git reset --hard "$initial_head"
         if [[ -n "$initial_branch" ]]; then
-            git checkout "$initial_branch"
+            visible git checkout "$initial_branch"
         else
-            git checkout "$initial_head"
+            visible git checkout "$initial_head"
         fi
 
         # Remove only this version's build artifacts
         if [[ -n "$version" ]] && [[ -d dist ]]; then
             find dist -name "*${version}*" -delete
-            [[ -d dist ]] && [[ -z "$(ls -A dist)" ]] && rmdir dist
+            [[ -d dist ]] && [[ -z "$(ls -A dist)" ]] && visible rmdir dist
         fi
-        [[ "$silent" == "false" ]] && echo "${GREEN}✓${NORMAL} Reverted to $(git rev-parse --short "$initial_head")"
     }
 
     # Rollback mode
@@ -126,7 +123,7 @@ release *ARGS: _fail_if_claudecode dev
             cleanup_release "HEAD~1" "$current_branch" "$version"
             echo "${GREEN}✓${NORMAL} Rollback complete"
         else
-            echo "${GREEN}✓${NORMAL} No release commit found"
+            fail "No release commit found"
         fi
         exit 0
     fi
