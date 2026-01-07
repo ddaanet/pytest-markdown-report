@@ -21,7 +21,7 @@ def run_pytest(*args: str) -> str:
 
 def test_quiet_mode() -> None:
     """Test quiet mode output matches expected."""
-    actual = run_pytest("test_example.py", "-q")
+    actual = run_pytest("examples.py", "-q")
     expected = (Path(__file__).parent / "expected" / "pytest-quiet.md").read_text()
     assert actual == expected, (
         f"Quiet mode output mismatch:\nExpected:\n{expected}\n\nActual:\n{actual}"
@@ -30,7 +30,7 @@ def test_quiet_mode() -> None:
 
 def test_default_mode() -> None:
     """Test default mode output matches expected."""
-    actual = run_pytest("test_example.py")
+    actual = run_pytest("examples.py")
     expected = (Path(__file__).parent / "expected" / "pytest-default.md").read_text()
     assert actual == expected, (
         f"Default mode output mismatch:\nExpected:\n{expected}\n\nActual:\n{actual}"
@@ -39,7 +39,7 @@ def test_default_mode() -> None:
 
 def test_verbose_mode() -> None:
     """Test verbose mode output matches expected."""
-    actual = run_pytest("test_example.py", "-v")
+    actual = run_pytest("examples.py", "-v")
     expected = (Path(__file__).parent / "expected" / "pytest-verbose.md").read_text()
     assert actual == expected, (
         f"Verbose mode output mismatch:\nExpected:\n{expected}\n\nActual:\n{actual}"
@@ -48,7 +48,7 @@ def test_verbose_mode() -> None:
 
 def test_skipped_section_separate() -> None:
     """Test that skipped tests appear in separate section, not Failures."""
-    actual = run_pytest("test_example.py")
+    actual = run_pytest("examples.py")
 
     # Should have both sections
     assert "## Failures" in actual, "Should have Failures section"
@@ -102,6 +102,6 @@ def test_no_trailing_blank_lines() -> None:
         ("default", []),
         ("verbose", ["-v"]),
     ]:
-        actual = run_pytest("test_example.py", *args)
+        actual = run_pytest("examples.py", *args)
         assert not actual.endswith("\n\n"), f"{mode} mode has trailing blank line"
         assert actual.endswith("\n"), f"{mode} mode missing final newline"

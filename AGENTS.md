@@ -31,16 +31,16 @@ just test -v            # Verbose output
 just test --pdb         # Drop into debugger on failures
 
 # Run example tests with markdown console output (default behavior)
-pytest tests/test_example.py
+pytest tests/examples.py
 
 # Run tests verbosely (includes passed tests in report)
-pytest tests/test_example.py -v
+pytest tests/examples.py -v
 
 # Run tests quietly (summary + rerun suggestion only, no live progress)
-pytest tests/test_example.py -q
+pytest tests/examples.py -q
 
 # Run a single test
-pytest tests/test_example.py::test_simple
+pytest tests/examples.py::test_simple
 
 # Re-run only failed tests
 pytest --lf

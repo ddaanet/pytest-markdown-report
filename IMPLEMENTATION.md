@@ -264,7 +264,7 @@ pytest_sessionfinish() → Generate and print markdown report
 platform darwin -- Python 3.14.1, pytest-9.0.2, pluggy-1.6.0
 collected 8 items
 
-test_example.py # Test Report
+examples.py # Test Report
 
 **Summary**: 5/8 passed | 1 failed | 2 skipped
 
@@ -287,7 +287,7 @@ Re-run failed: `pytest --lf`
 platform darwin -- Python 3.14.1, pytest-9.0.2, pluggy-1.6.0
 collected 8 items
 
-test_example.py # Test Report
+examples.py # Test Report
 
 **Summary**: 5/8 passed | 1 failed | 2 skipped
 
@@ -295,7 +295,7 @@ test_example.py # Test Report
 [... failures ...]
 
 ## Passes
-- test_example.py::test_simple ✓
+- examples.py::test_simple ✓
 [... all passed tests ...]
 ```
 
