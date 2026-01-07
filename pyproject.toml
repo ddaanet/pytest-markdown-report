@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "pytest-markdown-report"
-version = "0.0.2"  # No edit allowed. User can "just release" to version bump.
+version = "0.1.0"  # No edit allowed. User can "just release" to version bump.
 description = "Token-efficient markdown test reports for LLM-based TDD agents"
 readme = "README.md"
 requires-python = ">=3.11"
