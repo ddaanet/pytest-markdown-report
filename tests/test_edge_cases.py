@@ -3,6 +3,9 @@
 import subprocess
 import sys
 from pathlib import Path
+from unittest.mock import Mock
+
+from pytest_markdown_report.plugin import MarkdownReport, escape_markdown
 
 
 def run_pytest(*args: str) -> str:
@@ -22,10 +25,10 @@ def test_output_restored_after_normal_run() -> None:
     """Test that stdout/stderr are restored after normal pytest run."""
     # This test verifies output streams work after pytest runs
     test_file = Path(__file__).parent / "test_simple_temp.py"
-    test_file.write_text('''
+    test_file.write_text("""
 def test_pass():
     assert True
-''')
+""")
 
     try:
         # Run pytest
@@ -34,6 +37,7 @@ def test_pass():
         # Verify we can still capture output (streams are restored)
         result = subprocess.run(
             [sys.executable, "-c", "print('test')"],
+            check=False,
             capture_output=True,
             text=True,
         )
@@ -46,16 +50,22 @@ def test_pass():
 def test_file_write_with_invalid_path() -> None:
     """Test that invalid --markdown-report path is handled gracefully."""
     test_file = Path(__file__).parent / "test_simple_temp.py"
-    test_file.write_text('''
+    test_file.write_text("""
 def test_pass():
     assert True
-''')
+""")
 
     try:
         # Try to write to invalid path
         result = subprocess.run(
-            [sys.executable, "-m", "pytest", str(test_file),
-             "--markdown-report=/nonexistent/directory/report.md"],
+            [
+                sys.executable,
+                "-m",
+                "pytest",
+                str(test_file),
+                "--markdown-report=/nonexistent/directory/report.md",
+            ],
+            check=False,
             capture_output=True,
             text=True,
             cwd=Path(__file__).parent,
@@ -63,7 +73,9 @@ def test_pass():
 
         # Should still show output even if file write fails
         output = result.stdout + result.stderr
-        assert "1/1 passed" in output or "Warning" in output, "Should show output or warning"
+        assert "1/1 passed" in output or "Warning" in output, (
+            "Should show output or warning"
+        )
 
     finally:
         test_file.unlink(missing_ok=True)
@@ -103,8 +115,6 @@ def test_asterisk_in_name():
 
 def test_escape_markdown() -> None:
     """Test markdown escaping function."""
-    from pytest_markdown_report.plugin import escape_markdown
-
     # Characters that should be escaped
     assert escape_markdown("text with *asterisk*") == r"text with \*asterisk\*"
     assert escape_markdown("text with _underscore_") == r"text with \_underscore\_"
@@ -124,12 +134,11 @@ def test_escape_markdown() -> None:
 
 def test_categorize_reports_structure() -> None:
     """Test that MarkdownReport initializes with correct category lists."""
-    from pytest_markdown_report.plugin import MarkdownReport
-    from unittest.mock import Mock
-
     # Create mock config
     config = Mock()
-    config.getoption.side_effect = lambda x: None if x == "markdown_report_path" else "pytest --lf"
+    config.getoption.side_effect = (
+        lambda x: None if x == "markdown_report_path" else "pytest --lf"
+    )
     config.option.verbose = 0
 
     # Instantiate reporter
@@ -157,7 +166,10 @@ def test_categorize_reports_structure() -> None:
 
 
 def test_comprehensive_report_all_outcomes() -> None:
-    """Test report with all outcome types (pass, fail, skip, xfail, xpass, setup/teardown errors)."""
+    """Test comprehensive report with all outcome types.
+
+    Tests pass, fail, skip, xfail, xpass, and setup/teardown errors.
+    """
     test_file = Path(__file__).parent / "test_comprehensive_temp.py"
     test_file.write_text('''
 import pytest
@@ -208,7 +220,8 @@ def test_teardown_failure(broken_teardown):
 
         # Summary should show:
         # - 1 passed (test_normal_pass)
-        # - 4 failed (test_normal_fail + test_xpass + test_setup_failure + test_teardown_failure)
+        # - 4 failed (test_normal_fail, test_xpass, test_setup_failure,
+        #   test_teardown_failure)
         # - 1 skipped (test_skipped)
         # - 1 xfail (test_xfail)
         # Total: 7 tests

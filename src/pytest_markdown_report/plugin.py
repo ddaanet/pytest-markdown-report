@@ -157,17 +157,18 @@ class MarkdownReport:
             reports_by_nodeid[nodeid].append(report)
 
         # For each test, select the report with the worst outcome
-        for nodeid, reports_for_test in reports_by_nodeid.items():
-            # Priority: failed/error > skipped > passed
-            # Find the worst outcome
+        for reports_for_test in reports_by_nodeid.values():
+            # Find the worst outcome (priority: failed/error > skipped > passed)
             worst_report = reports_for_test[0]
             for report in reports_for_test[1:]:
-                # If current worst is not failed/error, but new one is, use new one
-                if worst_report.outcome not in ("failed", "error"):
-                    if report.outcome in ("failed", "error"):
-                        worst_report = report
-                    elif worst_report.outcome != "skipped" and report.outcome == "skipped":
-                        worst_report = report
+                if worst_report.outcome not in ("failed", "error") and (
+                    report.outcome in ("failed", "error")
+                    or (
+                        worst_report.outcome != "skipped"
+                        and report.outcome == "skipped"
+                    )
+                ):
+                    worst_report = report
 
             # Now categorize the worst report
             report = worst_report
@@ -218,7 +219,9 @@ class MarkdownReport:
                 self.markdown_path.write_text(report_text)
             except OSError as e:
                 # Print error but don't crash - console output is more important
-                sys.stderr.write(f"\nWarning: Could not write to {self.markdown_path}: {e}\n")
+                sys.stderr.write(
+                    f"\nWarning: Could not write to {self.markdown_path}: {e}\n"
+                )
 
     def _generate_collection_errors(self) -> list[str]:
         """Generate collection errors report."""

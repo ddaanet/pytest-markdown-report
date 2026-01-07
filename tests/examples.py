@@ -51,7 +51,8 @@ def test_future_feature() -> None:
 @pytest.mark.xfail(reason="Bug #123", strict=True)
 def test_known_bug() -> Never:
     """Test known bug."""
-    raise ValueError("Known issue")
+    msg = "Known issue"
+    raise ValueError(msg)
 
 
 # Passing tests

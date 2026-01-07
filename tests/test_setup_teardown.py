@@ -21,7 +21,7 @@ def run_pytest(*args: str) -> str:
 def test_setup_failure_appears() -> None:
     """Test that fixture setup failures appear in report."""
     test_file = Path(__file__).parent / "test_setup_fail_temp.py"
-    test_file.write_text('''
+    test_file.write_text("""
 import pytest
 
 @pytest.fixture
@@ -30,7 +30,7 @@ def broken_fixture():
 
 def test_uses_broken_fixture(broken_fixture):
     assert True
-''')
+""")
 
     try:
         actual = run_pytest(str(test_file))
@@ -50,7 +50,7 @@ def test_uses_broken_fixture(broken_fixture):
 def test_teardown_failure_appears() -> None:
     """Test that fixture teardown failures appear in report."""
     test_file = Path(__file__).parent / "test_teardown_fail_temp.py"
-    test_file.write_text('''
+    test_file.write_text("""
 import pytest
 
 @pytest.fixture
@@ -60,13 +60,15 @@ def fixture_with_bad_teardown():
 
 def test_uses_fixture(fixture_with_bad_teardown):
     assert True
-''')
+""")
 
     try:
         actual = run_pytest(str(test_file))
 
         # Test passed but teardown failed - should show failure
-        assert "0/1 passed, 1 failed" in actual, "Teardown failure should count as failed"
+        assert "0/1 passed, 1 failed" in actual, (
+            "Teardown failure should count as failed"
+        )
 
         # Should show teardown error in failures
         assert "## Failures" in actual
@@ -80,7 +82,7 @@ def test_uses_fixture(fixture_with_bad_teardown):
 def test_setup_and_teardown_both_fail() -> None:
     """Test handling when both setup and teardown fail."""
     test_file = Path(__file__).parent / "test_both_fail_temp.py"
-    test_file.write_text('''
+    test_file.write_text("""
 import pytest
 
 @pytest.fixture
@@ -99,7 +101,7 @@ def test_setup_fails(broken_fixture):
 
 def test_teardown_fails(teardown_broken):
     assert True
-''')
+""")
 
     try:
         actual = run_pytest(str(test_file))

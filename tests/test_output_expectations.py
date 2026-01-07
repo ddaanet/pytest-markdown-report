@@ -65,11 +65,15 @@ def test_skipped_section_separate() -> None:
     passes_idx = actual.index("## Passes") if "## Passes" in actual else len(actual)
     skipped_section = actual[skipped_section_start:passes_idx]
 
-    assert "test_future_feature SKIPPED" in skipped_section, "Skipped test should be in Skipped section"
+    assert "test_future_feature SKIPPED" in skipped_section, (
+        "Skipped test should be in Skipped section"
+    )
 
     # Failures section should NOT contain SKIPPED
     failures_section = actual[failures_idx:skipped_idx]
-    assert "SKIPPED" not in failures_section, "Failures section should not contain skipped tests"
+    assert "SKIPPED" not in failures_section, (
+        "Failures section should not contain skipped tests"
+    )
 
 
 def test_collection_error() -> None:

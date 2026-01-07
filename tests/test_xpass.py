@@ -52,7 +52,7 @@ def test_will_unexpectedly_pass():
 def test_xpass_count_matches_display() -> None:
     """Test that xpass count in summary matches failures shown."""
     test_file = Path(__file__).parent / "test_xpass_multi_temp.py"
-    test_file.write_text('''
+    test_file.write_text("""
 import pytest
 
 def test_normal_pass():
@@ -68,7 +68,7 @@ def test_xpass_2():
 
 def test_normal_fail():
     assert False
-''')
+""")
 
     try:
         actual = run_pytest(str(test_file))

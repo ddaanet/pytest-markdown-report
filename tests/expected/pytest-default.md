@@ -21,8 +21,8 @@ E   IndexError: list index out of range
 **Reason:** Bug #123
 
 ```python
-examples.py:54: in test_known_bug
-    raise ValueError("Known issue")
+examples.py:55: in test_known_bug
+    raise ValueError(msg)
 E   ValueError: Known issue
 ```
 
