@@ -122,10 +122,24 @@ LLM consumption.
 
 ### Decision
 
-Group all non-passing tests (failures, skips, xfails) in "Failures" section.
+Create separate sections for different test outcome categories.
+
+### Section Structure
+
+1. **## Failures** - Failed tests and xfailed tests (expected failures)
+   - Regular failures (FAILED)
+   - Expected failures (XFAIL)
+   - Unexpected passes (XPASS) - counted as failures
+
+2. **## Skipped** - Skipped tests (not run)
+   - Tests marked with `@pytest.mark.skip`
+   - Conditionally skipped tests
+
+3. **## Passes** - Passed tests (verbose mode only)
 
 ### Rationale
 
-- **Focus on issues**: What needs attention is all in one place
-- **Scan efficiency**: Developers can quickly see everything that's not working
-- **Semantic grouping**: "Things that need attention" vs "things that worked"
+- **Semantic clarity**: Skipped tests are not failures, deserve separate section
+- **Scan efficiency**: Each section has clear purpose and meaning
+- **Priority order**: Critical issues (failures) first, informational (passes) last
+- **Consistency**: Matches pytest's own categorization of test outcomes

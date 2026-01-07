@@ -70,6 +70,9 @@ def pytest_unconfigure(config: Config) -> None:
     """Unregister the plugin."""
     markdown_report = getattr(config, "_markdown_report", None)
     if markdown_report:
+        # Restore output before cleaning up (handles crashes/interrupts)
+        markdown_report._restore_output()  # noqa: SLF001
+
         # Clean up plugin state stored on config object
         del config._markdown_report  # noqa: SLF001
         config.pluginmanager.unregister(markdown_report)
@@ -117,6 +120,8 @@ class MarkdownReport:
         if self._original_stdout:
             sys.stdout = self._original_stdout
             sys.stderr = self._original_stderr
+            self._original_stdout = None  # Prevent double-restore
+            self._original_stderr = None
 
     def pytest_collectreport(self, report: TestReport) -> None:
         """Capture collection errors."""
@@ -125,9 +130,9 @@ class MarkdownReport:
 
     def pytest_runtest_logreport(self, report: TestReport) -> None:
         """Collect test reports."""
-        if report.when == "call" or (
-            report.when == "setup" and report.outcome == "skipped"
-        ):
+        # Capture call phase (actual test execution)
+        # Also capture all non-passing outcomes from any phase (setup/teardown)
+        if report.when == "call" or report.outcome in ("skipped", "failed", "error"):
             self.reports.append(report)
 
     def pytest_sessionfinish(
@@ -142,7 +147,30 @@ class MarkdownReport:
 
     def _categorize_reports(self) -> None:
         """Categorize test reports by outcome."""
+        # Group reports by nodeid to handle multiple phases (setup, call, teardown)
+        # For each test, use the worst outcome
+        reports_by_nodeid: dict[str, list[TestReport]] = {}
         for report in self.reports:
+            nodeid = report.nodeid
+            if nodeid not in reports_by_nodeid:
+                reports_by_nodeid[nodeid] = []
+            reports_by_nodeid[nodeid].append(report)
+
+        # For each test, select the report with the worst outcome
+        for nodeid, reports_for_test in reports_by_nodeid.items():
+            # Priority: failed/error > skipped > passed
+            # Find the worst outcome
+            worst_report = reports_for_test[0]
+            for report in reports_for_test[1:]:
+                # If current worst is not failed/error, but new one is, use new one
+                if worst_report.outcome not in ("failed", "error"):
+                    if report.outcome in ("failed", "error"):
+                        worst_report = report
+                    elif worst_report.outcome != "skipped" and report.outcome == "skipped":
+                        worst_report = report
+
+            # Now categorize the worst report
+            report = worst_report
             # Check wasxfail first, as xfail tests also have skipped=True
             if hasattr(report, "wasxfail"):
                 if report.outcome == "passed":
@@ -169,6 +197,8 @@ class MarkdownReport:
             lines.extend(self._generate_summary())
             if self.failed or self.xfailed or self.xpassed:
                 lines.extend(self._generate_failures())
+            if self.skipped:
+                lines.extend(self._generate_skipped())
             if self.verbosity > 0:
                 lines.extend(self._generate_passes())
 
@@ -184,7 +214,11 @@ class MarkdownReport:
 
         # Also write to file if specified
         if self.markdown_path:
-            self.markdown_path.write_text(report_text)
+            try:
+                self.markdown_path.write_text(report_text)
+            except OSError as e:
+                # Print error but don't crash - console output is more important
+                sys.stderr.write(f"\nWarning: Could not write to {self.markdown_path}: {e}\n")
 
     def _generate_collection_errors(self) -> list[str]:
         """Generate collection errors report."""
@@ -266,11 +300,20 @@ class MarkdownReport:
         for report in self.failed:
             lines.extend(self._format_failure(report))
 
-        for report in self.skipped:
-            lines.extend(self._format_skip(report))
-
         for report in self.xfailed:
             lines.extend(self._format_xfail(report))
+
+        for report in self.xpassed:
+            lines.extend(self._format_xpass(report))
+
+        return lines
+
+    def _generate_skipped(self) -> list[str]:
+        """Generate skipped section."""
+        lines = ["## Skipped", ""]
+
+        for report in self.skipped:
+            lines.extend(self._format_skip(report))
 
         return lines
 
@@ -286,7 +329,7 @@ class MarkdownReport:
 
     def _format_xpass(self, report: TestReport) -> list[str]:
         """Format an unexpected pass."""
-        lines = [f"### {report.nodeid} ⚠ XPASS"]
+        lines = [f"### {report.nodeid} XPASS"]
         lines.append("**Unexpected pass** (expected to fail)")
         lines.append("")
         return lines

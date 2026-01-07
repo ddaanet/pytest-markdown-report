@@ -471,3 +471,101 @@ Proceed to `plans/phase-2-skipped-and-resources.md` for:
 
 - Separating skipped tests into their own section
 - Fixing resource management issues
+
+---
+
+## Appendix: Failure Phase Reporting Design Decision
+
+**Status:** Design finalized, implementation in future phase
+
+### Context
+
+Phase 1 captures setup and teardown failures correctly and counts them as failures. However, the current implementation provides no semantic distinction between:
+
+- Test assertion failure (call phase)
+- Fixture setup failure (setup phase, test never ran)
+- Fixture teardown failure (teardown phase, but test assertion passed)
+
+### Design Decision: "FAILED in {phase}" Format
+
+**Format:** `test_name FAILED in setup` or `test_name FAILED in teardown`
+
+**Rationale:**
+- ✅ Explicit and unambiguous (no markdown syntax conflicts with `[phase]` notation)
+- ✅ More token-efficient than alternatives (+2 tokens vs +3 tokens for brackets)
+- ✅ Provides semantic clarity for LLM agents about what broke
+- ✅ Backward compatible (summary remains "X failed", details clarify why)
+
+**Example output:**
+
+```markdown
+## Failures
+
+### test_foo.py::test_needs_fixture FAILED in setup
+
+```python
+fixture_name setup failed: RuntimeError: Fixture broken
+```
+
+### test_bar.py::test_passes_but_cleanup_fails FAILED in teardown
+
+**Test assertion passed. Teardown error:**
+
+```python
+fixture_name teardown failed: RuntimeError: Resource leak
+```
+```
+
+### Alternative Formats Rejected
+
+*Measured on base string "### test_foo FAILED"*
+
+| Format | Delta Tokens | Issue |
+|--------|-------------|-------|
+| `FAILED [setup]` | +3 | Conflicts with markdown link syntax `[...]` |
+| `SETUP FAILED` | (restructure) | Less discoverable - "FAILED" is the standard label |
+| `FAILED (setup phase)` | +5 | More tokens than alternatives |
+| `FAILED: setup` | +2 | Colon suggests error message intro, ambiguous with traceback |
+| `FAILED in setup` | +2 | **CHOSEN** - clear, unambiguous, natural language, no syntax conflicts |
+
+### Summary Behavior (Unchanged)
+
+The summary count remains simple for token efficiency:
+
+```markdown
+**Summary:** 5/10 passed, 5 failed
+```
+
+Phase information only appears in the detailed Failures section, not in the summary. This keeps the summary compact while providing full context where needed.
+
+### Three-Phase Semantic Model
+
+When implemented, the plugin will distinguish:
+
+1. **Test Failure** (implicit, no phase notation needed)
+   - Report line: `### test_foo FAILED`
+   - Meaning: Call phase (actual test) failed
+   - Action: Fix test code
+
+2. **Setup Failure** (explicit phase notation)
+   - Report line: `### test_bar FAILED in setup`
+   - Meaning: Fixture setup failed, test never ran
+   - Action: Fix fixture or test environment
+
+3. **Teardown Failure** (explicit phase notation)
+   - Report line: `### test_baz FAILED in teardown`
+   - Meaning: Test assertions passed, cleanup broke
+   - Action: Fix fixture teardown, resource cleanup, or external service
+
+### Implementation Approach (Future Phase)
+
+1. Track failure phase in `_categorize_reports()` alongside worst outcome
+2. Pass phase information to `_format_failure()` method
+3. Conditionally add phase notation: `{symbol}` vs `{symbol} in {phase}`
+4. Preserve all existing tests - this is purely additive
+
+### Why This Matters
+
+- **For LLM agents**: Different failure types need different fixes (code vs infrastructure vs cleanup)
+- **For developers**: Instantly distinguishes "test is broken" from "test environment is broken"
+- **Token efficient**: Only +2 tokens per failure for setup/teardown distinction, provides significant semantic clarity without markdown syntax conflicts

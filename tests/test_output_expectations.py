@@ -46,6 +46,32 @@ def test_verbose_mode() -> None:
     )
 
 
+def test_skipped_section_separate() -> None:
+    """Test that skipped tests appear in separate section, not Failures."""
+    actual = run_pytest("test_example.py")
+
+    # Should have both sections
+    assert "## Failures" in actual, "Should have Failures section"
+    assert "## Skipped" in actual, "Should have Skipped section"
+
+    # Skipped section should come after Failures
+    failures_idx = actual.index("## Failures")
+    skipped_idx = actual.index("## Skipped")
+    assert skipped_idx > failures_idx, "Skipped should come after Failures"
+
+    # Skipped test should be in Skipped section, not Failures
+    skipped_section_start = skipped_idx
+    # Find the next section or end
+    passes_idx = actual.index("## Passes") if "## Passes" in actual else len(actual)
+    skipped_section = actual[skipped_section_start:passes_idx]
+
+    assert "test_future_feature SKIPPED" in skipped_section, "Skipped test should be in Skipped section"
+
+    # Failures section should NOT contain SKIPPED
+    failures_section = actual[failures_idx:skipped_idx]
+    assert "SKIPPED" not in failures_section, "Failures section should not contain skipped tests"
+
+
 def test_collection_error() -> None:
     """Test collection error output format."""
     # Create a temporary file with syntax error

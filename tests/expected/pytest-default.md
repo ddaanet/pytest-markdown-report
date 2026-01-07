@@ -16,10 +16,6 @@ test_example.py:18: in extract_tokens
 E   IndexError: list index out of range
 ```
 
-### tests/test_example.py::test_future_feature SKIPPED
-
-**Reason:** Not implemented yet
-
 ### tests/test_example.py::test_known_bug XFAIL
 
 **Reason:** Bug #123
@@ -29,3 +25,9 @@ test_example.py:54: in test_known_bug
     raise ValueError("Known issue")
 E   ValueError: Known issue
 ```
+
+## Skipped
+
+### tests/test_example.py::test_future_feature SKIPPED
+
+**Reason:** Not implemented yet
