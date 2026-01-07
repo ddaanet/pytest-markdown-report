@@ -148,9 +148,8 @@ integration (e.g., `just` recipes) while defaulting to `pytest --lf`.
 
 **CRITICAL**: AGENTS.md is for persistent, long-lived information only.
 
-- ✅ **Do put in AGENTS.md**: Architecture, commands, design principles, testing
-  guidelines
-- ❌ **Do NOT put in AGENTS.md**: Current plans, active tasks, session-specific context,
+- **Do put in AGENTS.md**: Architecture, commands, design principles, testing guidelines
+- **Do NOT put in AGENTS.md**: Current plans, active tasks, session-specific context,
   implementation details
 
 **Current plans and tasks belong in:**
@@ -163,8 +162,35 @@ this AGENTS.md file ONLY if it's persistent information (architecture, commands,
 guidelines). If it's about current work or plans, put it in `session.md` or `plans/`
 instead.
 
-**Handoff Protocol**: When asked to handoff to another agent, write context for the
-following agent to `session.md` in the repository root.
+### Context Management
+
+**For small projects like this one:**
+
+1. **session.md** is the primary context file for:
+   - Current work state (what's in progress)
+   - Handoff notes for next agent
+   - Recent decisions with rationale
+   - Known blockers
+
+2. **Size discipline**: Keep session.md under ~100 lines
+   - When it grows beyond this, archive completed work to `plans/archive/` or delete
+   - Preserve only: current state, next actions, recent decisions, blockers
+
+3. **Flushing strategy**:
+   - After completing a feature/fix: summarize outcome in 1-2 lines, delete details
+   - After multi-day work: archive full context to `plans/archive/{date}-session.md`
+   - Keep session.md focused on "what does the next agent need to know?"
+
+4. **When to create agents/ directory**: Not needed until project has:
+   - Multiple specialized agent roles
+   - Sustained multi-week development
+   - Context files exceeding 200+ lines regularly
+   - Reference: `claudeutils/agents/` for full architecture example
+
+**Handoff Protocol**: When asked to handoff to another agent, update `session.md` with:
+- Current state (1-2 sentences)
+- Immediate next action
+- Any blockers or gotchas
 
 ### Testing Guidelines
 
