@@ -2,12 +2,9 @@
 # - Errors should not pass silently without good reason
 # - Only use `2>/dev/null` for probing (checking exit status when command has no quiet option)
 # - Only use `|| true` to continue after expected failures (required with `set -e`)
-
 # Enable bash tracing (set -x) for all recipes. Usage: just trace=true <recipe>
-trace := "false"
 
-# Shebang for bash recipes with optional tracing (use as: #!{{ shebang_bash }})
-shebang_bash := if trace == "true" { "/usr/bin/env bash -xeuo pipefail" } else { "/usr/bin/env bash -euo pipefail" }
+trace := "false"
 
 # List available recipes
 help:
@@ -20,42 +17,55 @@ dev: format check test
 # Run test suite
 [no-exit-message]
 test *ARGS:
-    uv run pytest tests/test_output_expectations.py {{ ARGS }}
+    #!{{ bash_prolog }}
+    sync
+    pytest {{ ARGS }}
 
 # Format, check with complexity disabled, test
 [no-exit-message]
 lint: format
-    uv run ruff check -q --ignore=C901
-    docformatter -c src tests
-    uv run mypy
-    uv run pytest tests/test_output_expectations.py
+    #!{{ bash_prolog }}
+    sync
+    show "# ruff check"
+    safe ruff check -q --ignore=C901
+    show "# docformatter -c"
+    safe docformatter -c src tests
+    show "# mypy"
+    safe mypy
+    show "# pytest"
+    safe pytest -q
+    end-safe
 
 # Check code style
 [no-exit-message]
 check:
-    uv run ruff check -q
-    docformatter -c src tests
-    uv run mypy
+    #!{{ bash_prolog }}
+    sync
+    show "# ruff check"
+    safe ruff check -q
+    show "# docformatter -c"
+    safe docformatter -c src tests
+    show "# mypy"
+    safe mypy
+    end-safe
 
 # Format code
 format:
-    #!{{ shebang_bash }}
+    #!{{ bash_prolog }}
+    sync
     tmpfile=$(mktemp tmp-fmt-XXXXXX)
     trap "rm $tmpfile" EXIT
     patch-and-print() {
         patch "$@" | sed -Ene "/^patching file '/s/^[^']+'([^']+)'/\\1/p"
     }
-    uv run ruff check -q --fix-only --diff | patch-and-print >> "$tmpfile" || true
-    uv run ruff format -q --diff | patch-and-print >> "$tmpfile" || true
+    ruff check -q --fix-only --diff | patch-and-print >> "$tmpfile" || true
+    ruff format -q --diff | patch-and-print >> "$tmpfile" || true
     # docformatter --diff applies the change *and* outputs the diff, so we need to
     # reverse the patch (-R) and dry run (-C), and it prefixes the path with before and
     # after (-p1 ignores the first component of the path). Hence `patch -RCp1`.
     docformatter --diff src tests | patch-and-print -RCp1 >> "$tmpfile" || true
-
-    git ls-files | grep '\.md$' | uv run claudeutils markdown >> "$tmpfile"
-    dprint -c .dprint.json check --list-different \
-    | sed "s|^$(pwd)/||g" >> "$tmpfile" || true
-    dprint -c .dprint.json fmt -L warn
+    # Markdown formatting disabled for the moment.
+    # Must find replacement for dprint that handles backticks correctly.
     modified=$(sort --unique < "$tmpfile")
     if [ -n "$modified" ] ; then
         bold=$'\033[1m'; nobold=$'\033[22m'
@@ -66,11 +76,11 @@ format:
 
 # Create release: tag, build tarball, upload to PyPI and GitHub
 # Use --dry-run to perform local changes and verify external permissions without publishing
+
 # Use --rollback to revert local changes from a crashed dry-run
 [no-exit-message]
 release *ARGS: _fail_if_claudecode dev
-    #!{{ shebang_bash }}
-    {{ _bash-defs }}
+    #!{{ bash_prolog }}
     DRY_RUN=false
     ROLLBACK=false
     BUMP=patch
@@ -192,9 +202,11 @@ release *ARGS: _fail_if_claudecode dev
     visible gh release create "$tag" --title "$version" --generate-notes
     echo "${GREEN}✓${NORMAL} Release $tag complete"
 
-# Bash definitions
+# Bash prolog
 [private]
-_bash-defs := '''
+bash_prolog := \
+    ( if trace == "true" { "/usr/bin/env bash -xeuo pipefail" } \
+    else { "/usr/bin/env bash -euo pipefail" } ) + "\n" + '''
 COMMAND="''' + style('command') + '''"
 ERROR="''' + style('error') + '''"
 GREEN=$'\033[32m'
@@ -204,15 +216,24 @@ end-safe () { ${status:-true}; }
 show () { echo "$COMMAND$*$NORMAL"; }
 visible () { show "$@"; "$@"; }
 fail () { echo "${ERROR}$*${NORMAL}"; exit 1; }
+
+# Use direct venv binaries when in Claude Code sandbox
+# (uv run crashes on system config access)
+sandboxed=$(test -w /tmp && echo "false" || echo "true")
+sync() { if ! $sandboxed; then uv sync -q "$@"; fi; }
+define_env_cmd () { if $sandboxed; then eval "$1() { .venv/bin/$1 \"\$@\"; }"; else eval "$1() { uv run $1 \"\$@\"; }"; fi; }
+define_env_cmd pytest
+define_env_cmd ruff
+define_env_cmd mypy
+define_env_cmd claudeutils
 '''
 
 # Fail if CLAUDECODE is set
 [no-exit-message]
 [private]
 _fail_if_claudecode:
-    #!{{ shebang_bash }}
+    #!{{ bash_prolog }}
     if [ "${CLAUDECODE:-}" != "" ]; then
         echo -e '{{ style("error") }}⛔️ Denied: use agent recipes{{ NORMAL }}'
         exit 1
     fi
-
