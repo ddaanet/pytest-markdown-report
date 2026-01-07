@@ -79,21 +79,28 @@ pytest --markdown-rerun-cmd=""
 ````markdown
 # Test Report
 
-**Summary**: 2/5 passed | 3 failed | 0 skipped
+**Summary:** 2/5 passed, 3 failed
 
 ## Failures
 
-### test_validation.py::test_invalid_input[empty] ✗
-
-**Error**: AssertionError
+### test_validation.py::test_invalid_input[empty] FAILED
 
 ```python
->       assert validate(input) == expected
-E       AssertionError: assert True == False
+test_validation.py:42: in test_invalid_input
+    assert validate(input) == expected
+E   AssertionError: assert False == True
+```
 
-test_validation.py:42: AssertionError
+### test_database.py::test_with_db FAILED in setup
+
+```python
+conftest.py:15: in db_connection
+    raise ConnectionError("Database unavailable")
+E   ConnectionError: Database unavailable
 ```
 ````
+
+**Note:** Setup and teardown failures show phase notation (e.g., `FAILED in setup`) to distinguish fixture issues from test assertion failures.
 
 ### Verbose Mode (-v)
 
@@ -102,16 +109,16 @@ Adds passed test list after failures:
 ```markdown
 ## Passes
 
-- test_feature.py::test_critical_path ✓
-- test_basic.py::test_simple ✓
+- test_feature.py::test_critical_path
+- test_basic.py::test_simple
 ```
 
 ### Quiet Mode (-q)
 
 ```markdown
-**Summary**: 2/5 passed | 3 failed | 0 skipped
+**Summary:** 2/5 passed, 3 failed
 
-Re-run failed: `just test --lf`
+**Re-run failed:** `pytest --lf`
 ```
 
 ## Design Goals
@@ -123,11 +130,13 @@ Re-run failed: `just test --lf`
 
 ## Edge Cases
 
-**Parametrized tests**: Parameter values in test name `[empty]`
+**Parametrized tests**: Parameter values shown in test name `[empty]`
 
-**Skipped tests**: `⊘` symbol with skip reason, no traceback
+**Skipped tests**: Labeled `SKIPPED` with skip reason in separate section
 
-**xfail**: `⚠` symbol distinguishes expected failures
+**Expected failures**: `XFAIL` label for expected failures, `XPASS` for unexpected passes
+
+**Setup/teardown failures**: Phase notation shows context (e.g., `FAILED in setup`, `FAILED in teardown`)
 
 **Captured output**: Included under failures when present
 

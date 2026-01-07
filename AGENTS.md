@@ -111,6 +111,12 @@ Test outcomes are categorized and displayed in separate sections:
 call, teardown). Setup errors and teardown failures appear in Failures section with full
 traceback.
 
+**Phase reporting:** Failures in setup or teardown phases display explicit phase notation
+(e.g., "FAILED in setup", "FAILED in teardown") to distinguish them from call-phase test
+failures. Call-phase failures show just "FAILED" since this is the implicit default. This
+provides semantic clarity about whether the test assertion failed, fixture setup broke, or
+cleanup failed.
+
 ### Resource Management
 
 The plugin manages output streams to ensure clean operation:

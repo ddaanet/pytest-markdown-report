@@ -319,7 +319,12 @@ class MarkdownReport:
 
     def _format_failure(self, report: TestReport, symbol: str = "FAILED") -> list[str]:
         """Format a failed test."""
-        lines = [f"### {report.nodeid} {symbol}", ""]
+        # Add phase notation for non-call failures
+        phase_suffix = ""
+        if hasattr(report, "when") and report.when != "call":
+            phase_suffix = f" in {report.when}"
+
+        lines = [f"### {report.nodeid} {symbol}{phase_suffix}", ""]
 
         # Add traceback
         if report.longreprtext:
