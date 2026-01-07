@@ -126,14 +126,14 @@ just test
 
 ## Verification Checklist
 
-After implementation is complete, verify:
+Implementation complete - all items verified:
 
-- [ ] All tests pass: `just test`
-- [ ] XPASS tests pass: `pytest tests/test_xpass.py -v`
-- [ ] Setup/teardown tests pass: `pytest tests/test_setup_teardown.py -v`
-- [ ] Edge case tests pass: `pytest tests/test_edge_cases.py -v`
-- [ ] Integration tests pass: `pytest tests/test_output_expectations.py -v`
-- [ ] Manual Ctrl+C recovery test passed
-- [ ] Token counts verified (minimal change)
-- [ ] Documentation updated (design-decisions.md, AGENTS.md)
-- [ ] Code review status updated (plans/code-review.md)
+- [x] All tests pass: `just test`
+- [x] XPASS tests pass: `pytest tests/test_xpass.py -v`
+- [x] Setup/teardown tests pass: `pytest tests/test_setup_teardown.py -v`
+- [x] Edge case tests pass: `pytest tests/test_edge_cases.py -v`
+- [x] Integration tests pass: `pytest tests/test_output_expectations.py -v`
+- [x] Manual Ctrl+C recovery test passed
+- [x] Token counts verified (minimal change)
+- [x] Documentation updated (design-decisions.md, AGENTS.md)
+- [x] Code review status updated (plans/code-review.md)

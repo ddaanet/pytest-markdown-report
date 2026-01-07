@@ -17,6 +17,36 @@ are isolated and have clear fix paths.
 
 ---
 
+## Implementation Status
+
+- **Date Implemented:** 2026-01-04
+- **Status:** ✅ ALL ISSUES FIXED
+
+| Issue    | Description                 | Status   | Verification                        |
+| -------- | --------------------------- | -------- | ----------------------------------- |
+| #1       | XPASS not displayed         | ✅ Fixed | `tests/test_xpass.py`               |
+| #2       | Setup/teardown not captured | ✅ Fixed | `tests/test_setup_teardown.py`      |
+| #3       | Unicode in XPASS            | ✅ Fixed | `tests/test_xpass.py`               |
+| #4       | StringIO not closed         | ✅ Fixed | Code review                         |
+| #5       | No crash recovery           | ✅ Fixed | Manual Ctrl+C test                  |
+| #6       | Skipped in failures         | ✅ Fixed | `tests/test_output_expectations.py` |
+| Coverage | Missing tests               | ✅ Fixed | `tests/test_edge_cases.py`          |
+
+**Test coverage added:**
+
+- XPASS display and counting: 2 tests
+- Setup/teardown failures: 3 tests
+- Edge cases (special chars, resource cleanup): 5 tests
+- Integration (all outcomes): 1 test
+- Total new tests: 11
+
+**Documentation updated:**
+
+- `design-decisions.md`: Report organization section
+- `AGENTS.md`: Report generation pipeline, categorization logic, resource management
+
+---
+
 ## Critical Issues (Require Fixes)
 
 ### Issue #1: XPASS Tests Counted But Not Displayed
