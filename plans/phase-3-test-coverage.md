@@ -493,7 +493,8 @@ The plugin manages output streams carefully to ensure clean operation:
 **Purpose:** Quick reference for what was changed
 
 **Content:**
-```markdown
+
+````markdown
 # Implementation Summary: Code Review Fixes
 
 - **Implementation Date:** 2026-01-04
@@ -607,13 +608,13 @@ just test
 
 ## Issues Resolved
 
-✅ Issue #1: XPASS tests now visible in Failures section
-✅ Issue #2: Setup/teardown failures captured and displayed
-✅ Issue #3: Unicode symbol removed (token efficiency maintained)
-✅ Issue #4: StringIO buffer properly closed
-✅ Issue #5: Terminal restored on crash (pytest_unconfigure)
-✅ Issue #6: Skipped tests in separate semantic section
-✅ Test coverage gaps filled with 11 new tests
+- ✅ Issue #1: XPASS tests now visible in Failures section
+- ✅ Issue #2: Setup/teardown failures captured and displayed
+- ✅ Issue #3: Unicode symbol removed (token efficiency maintained)
+- ✅ Issue #4: StringIO buffer properly closed
+- ✅ Issue #5: Terminal restored on crash (pytest_unconfigure)
+- ✅ Issue #6: Skipped tests in separate semantic section
+- ✅ Test coverage gaps filled with 11 new tests
 
 ---
 
@@ -628,7 +629,7 @@ just test
 - [x] Token counts verified (minimal change)
 - [x] Documentation updated (design-decisions.md, AGENTS.md)
 - [x] Code review status updated (plans/code-review.md)
-```
+````
 
 ---
 

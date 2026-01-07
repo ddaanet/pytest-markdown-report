@@ -82,7 +82,7 @@ def test_skipped_section_separate() -> None:
 **File:** `tests/expected/pytest-default.md`
 
 **Before:**
-```markdown
+````markdown
 # Test Report
 
 **Summary:** 5/8 passed, 1 failed, 1 skipped, 1 xfail
@@ -114,10 +114,10 @@ test_example.py:54: in test_known_bug
     raise ValueError("Known issue")
 E   ValueError: Known issue
 ```
-```
+````
 
 **After:**
-```markdown
+````markdown
 # Test Report
 
 **Summary:** 5/8 passed, 1 failed, 1 skipped, 1 xfail
@@ -151,7 +151,7 @@ E   ValueError: Known issue
 ### tests/test_example.py::test_future_feature SKIPPED
 
 **Reason:** Not implemented yet
-```
+````
 
 **File:** `tests/expected/pytest-verbose.md` (similar changes - add "## Skipped" section
 between Failures and Passes)
