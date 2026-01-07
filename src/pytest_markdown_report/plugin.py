@@ -73,6 +73,9 @@ def pytest_unconfigure(config: Config) -> None:
         # Restore output before cleaning up (handles crashes/interrupts)
         markdown_report._restore_output()  # noqa: SLF001
 
+        # Close buffer after all hooks complete
+        markdown_report._close_buffer()  # noqa: SLF001
+
         # Clean up plugin state stored on config object
         del config._markdown_report  # noqa: SLF001
         config.pluginmanager.unregister(markdown_report)
@@ -122,6 +125,12 @@ class MarkdownReport:
             sys.stderr = self._original_stderr
             self._original_stdout = None  # Prevent double-restore
             self._original_stderr = None
+
+    def _close_buffer(self) -> None:
+        """Close capture buffer to release resources."""
+        if self._capture_buffer:
+            self._capture_buffer.close()
+            self._capture_buffer = None
 
     def pytest_collectreport(self, report: TestReport) -> None:
         """Capture collection errors."""

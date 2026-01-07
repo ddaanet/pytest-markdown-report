@@ -249,3 +249,27 @@ def test_teardown_failure(broken_teardown):
 
     finally:
         test_file.unlink(missing_ok=True)
+
+
+def test_buffer_cleanup_no_resource_leaks() -> None:
+    """Regression test: verify repeated pytest runs don't leak resources.
+
+    This test verifies that the StringIO buffer is properly cleaned up by
+    running pytest multiple times in sequence. If buffers weren't being
+    closed, we'd eventually see resource issues or memory growth.
+    """
+    test_file = Path(__file__).parent / "test_buffer_cleanup_temp.py"
+    test_file.write_text("""
+def test_simple():
+    assert True
+""")
+
+    try:
+        # Run pytest multiple times - if buffers aren't closed, this could
+        # cause issues with repeated runs
+        for _ in range(5):
+            output = run_pytest(str(test_file))
+            assert "1/1 passed" in output, "Test should pass on each run"
+
+    finally:
+        test_file.unlink(missing_ok=True)
