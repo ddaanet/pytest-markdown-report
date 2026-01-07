@@ -147,43 +147,50 @@ class MarkdownReport:
 
     def _categorize_reports(self) -> None:
         """Categorize test reports by outcome."""
-        # Group reports by nodeid to handle multiple phases (setup, call, teardown)
-        # For each test, use the worst outcome
+        reports_by_nodeid = self._group_reports_by_nodeid()
+
+        for reports_for_test in reports_by_nodeid.values():
+            worst_report = self._find_worst_report(reports_for_test)
+            self._categorize_single_report(worst_report)
+
+    def _group_reports_by_nodeid(self) -> dict[str, list[TestReport]]:
+        """Group reports by nodeid to handle multiple phases."""
         reports_by_nodeid: dict[str, list[TestReport]] = {}
         for report in self.reports:
             nodeid = report.nodeid
             if nodeid not in reports_by_nodeid:
                 reports_by_nodeid[nodeid] = []
             reports_by_nodeid[nodeid].append(report)
+        return reports_by_nodeid
 
-        # For each test, select the report with the worst outcome
-        for reports_for_test in reports_by_nodeid.values():
-            # Find the worst outcome (priority: failed/error > skipped > passed)
-            worst_report = reports_for_test[0]
-            for report in reports_for_test[1:]:
-                if worst_report.outcome not in ("failed", "error") and (
-                    report.outcome in ("failed", "error")
-                    or (
-                        worst_report.outcome != "skipped"
-                        and report.outcome == "skipped"
-                    )
-                ):
-                    worst_report = report
+    def _find_worst_report(self, reports: list[TestReport]) -> TestReport:
+        """Find the report with the worst outcome from a list.
 
-            # Now categorize the worst report
-            report = worst_report
-            # Check wasxfail first, as xfail tests also have skipped=True
-            if hasattr(report, "wasxfail"):
-                if report.outcome == "passed":
-                    self.xpassed.append(report)
-                else:
-                    self.xfailed.append(report)
-            elif report.skipped:
-                self.skipped.append(report)
-            elif report.passed:
-                self.passed.append(report)
-            elif report.failed:
-                self.failed.append(report)
+        Priority: failed/error > skipped > passed
+        """
+        worst_report = reports[0]
+        for report in reports[1:]:
+            if worst_report.outcome not in ("failed", "error") and (
+                report.outcome in ("failed", "error")
+                or (worst_report.outcome != "skipped" and report.outcome == "skipped")
+            ):
+                worst_report = report
+        return worst_report
+
+    def _categorize_single_report(self, report: TestReport) -> None:
+        """Categorize a single report by outcome."""
+        # Check wasxfail first, as xfail tests also have skipped=True
+        if hasattr(report, "wasxfail"):
+            if report.outcome == "passed":
+                self.xpassed.append(report)
+            else:
+                self.xfailed.append(report)
+        elif report.skipped:
+            self.skipped.append(report)
+        elif report.passed:
+            self.passed.append(report)
+        elif report.failed:
+            self.failed.append(report)
 
     def _build_report_lines(self) -> list[str]:
         """Build report lines based on test results and verbosity mode."""

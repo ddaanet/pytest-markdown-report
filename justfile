@@ -28,6 +28,7 @@ lint: format
     sync
     show "# ruff check"
     safe ruff check -q --ignore=C901
+
     show "# docformatter -c"
     safe docformatter -c src tests
     show "# mypy"
