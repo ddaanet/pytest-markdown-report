@@ -170,8 +170,6 @@ instead.
 
 ### Context Management
 
-**For small projects like this one:**
-
 1. **session.md** is the primary context file for:
    - Current work state (what's in progress)
    - Handoff notes for next agent
