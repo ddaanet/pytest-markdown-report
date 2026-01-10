@@ -1,30 +1,25 @@
 # Current Session Context
 
-**Status:** Token optimization plan ready for implementation
+**Status:** ✅ Token optimization plan COMPLETE
 
 ---
 
-## Active Plan
+## Implementation Summary
 
-**File:** `/Users/david/.claude/plans/sprightly-hopping-charm.md`
+**All phases completed successfully:**
 
-**Goal:** Optimize default mode to beat tuned pytest token count (180 tokens)
+✅ **Phase 0:** Fixed `pytest --help` bug (guard output redirection)
+✅ **Phase 1:** Removed XFAIL/SKIPPED from default mode (failures only)
+✅ **Phase 2:** Added -r flag support for customizing default mode output
+✅ **Phase 3:** Updated AGENTS.md documentation
 
-**Critical Bug:** Plugin breaks `pytest --help` - fix ready (3-line guard in pytest_configure)
-
-**Strategy:**
-- Phase 0: Fix --help bug (IMMEDIATE)
-- Phase 1: Remove XFAIL/SKIPPED from default → 168 tokens
-- Phase 2: Add -r flag support (-rs, -rx)
-- Phase 3: Documentation updates
-
-**Key Decisions:**
-- Default shows failures only (match tuned pytest)
-- XPASS always visible (broken expectations)
-- -q and -r flags compose (don't override)
-- Caret removal deferred (optional Phase 4)
-
-**Next Action:** Implement Phase 0 (critical bug fix) then Phase 1 (optimizations)
+**Key Features:**
+- Default mode shows failures + XPASS (broken expectations)
+- `-rs`: Show Skipped section
+- `-rx`: Show XFail section
+- `-rsx`: Show both Skipped and XFail
+- `-v`: Always shows all sections
+- `-q`: Minimal output (summary only)
 
 ---
 

@@ -50,6 +50,11 @@ pytest tests/examples.py::test_simple
 # Re-run only failed tests
 pytest --lf
 
+# Show additional sections in default mode (use -r flag)
+pytest tests/examples.py -rs        # Show Skipped section
+pytest tests/examples.py -rx        # Show XFail section
+pytest tests/examples.py -rsx       # Show both Skipped and XFail
+
 # Also save markdown report to a file
 pytest --markdown-report=report.md
 
@@ -91,10 +96,10 @@ The `MarkdownReport` class orchestrates report generation:
    phases (call, setup, teardown) when outcome is non-passing
 3. **Categorization** (`pytest_sessionfinish`): Sorts reports into
    passed/failed/skipped/xfailed/xpassed buckets
-4. **Formatting** (`pytest_sessionfinish`): Generates markdown based on verbosity mode:
-   - **Quiet mode**: Summary + optional rerun command
-   - **Default mode**: Summary + failures section + skipped section
-   - **Verbose mode**: Summary + failures + skipped + passes list
+4. **Formatting** (`pytest_sessionfinish`): Generates markdown based on verbosity and -r flags:
+   - **Quiet mode (-q)**: Summary + optional rerun command
+   - **Default mode**: Summary + failures (respects -r flags for skipped/xfail sections)
+   - **Verbose mode (-v)**: Summary + all sections (failures, skipped, xfail, passes)
 5. **Output Restoration** (`pytest_sessionfinish`): Restores stdout/stderr and prints
    markdown report to console, optionally saves to file
 
@@ -102,13 +107,19 @@ The `MarkdownReport` class orchestrates report generation:
 
 Test outcomes are categorized and displayed in separate sections:
 
-- `failed`: Regular test failures → **## Failures** section (full traceback)
-- `xfailed`: Expected failures (`@pytest.mark.xfail` that fail) → **## Failures**
-  section
+- `failed`: Regular test failures → **## Failures** section (full traceback, always shown)
+- `xfailed`: Expected failures (`@pytest.mark.xfail` that fail) → **## Failures** section
+  (shown in verbose mode or with `-rx` flag)
 - `xpassed`: Unexpected passes (xfail tests that pass) → **## Failures** section
-  (counted as failures)
+  (always shown, counted as failures since they break expectations)
 - `skipped`: Tests marked skip or conditional skips → **## Skipped** section
+  (shown in verbose mode or with `-rs` flag)
 - `passed`: Successful tests → **## Passes** section (verbose mode only)
+
+**Display modes:**
+- **Default mode**: Shows only failures + xpassed. Use `-rs` to add skipped section, `-rx` to add xfail section
+- **Verbose mode (-v)**: Always shows all sections regardless of -r flags
+- **Quiet mode (-q)**: Shows only summary line
 
 **Section order:** Summary → Failures → Skipped → Passes
 
