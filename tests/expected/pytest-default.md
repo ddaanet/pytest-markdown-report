@@ -15,19 +15,3 @@ examples.py:18: in extract_tokens
            ^^^^^^^
 E   IndexError: list index out of range
 ```
-
-### tests/examples.py::test_known_bug XFAIL
-
-**Reason:** Bug #123
-
-```python
-examples.py:55: in test_known_bug
-    raise ValueError(msg)
-E   ValueError: Known issue
-```
-
-## Skipped
-
-### tests/examples.py::test_future_feature SKIPPED
-
-**Reason:** Not implemented yet

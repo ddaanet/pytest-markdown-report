@@ -216,7 +216,8 @@ def test_teardown_failure(broken_teardown):
 ''')
 
     try:
-        actual = run_pytest(str(test_file))
+        # Use verbose mode to see all sections (skipped, xfail)
+        actual = run_pytest(str(test_file), "-v")
 
         # Summary should show:
         # - 1 passed (test_normal_pass)
@@ -227,7 +228,7 @@ def test_teardown_failure(broken_teardown):
         # Total: 7 tests
         assert "1/7 passed, 4 failed, 1 skipped, 1 xfail" in actual
 
-        # Verify sections exist
+        # Verify sections exist (in verbose mode)
         assert "## Failures" in actual
         assert "## Skipped" in actual
 

@@ -47,10 +47,10 @@ def test_verbose_mode() -> None:
 
 
 def test_skipped_section_separate() -> None:
-    """Test that skipped tests appear in separate section, not Failures."""
-    actual = run_pytest("examples.py")
+    """Test that skipped tests appear in separate section in verbose mode."""
+    actual = run_pytest("examples.py", "-v")
 
-    # Should have both sections
+    # Should have both sections in verbose mode
     assert "## Failures" in actual, "Should have Failures section"
     assert "## Skipped" in actual, "Should have Skipped section"
 

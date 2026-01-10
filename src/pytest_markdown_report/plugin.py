@@ -214,10 +214,16 @@ class MarkdownReport:
             lines.extend(self._generate_quiet())
         else:
             lines.extend(self._generate_summary())
-            if self.failed or self.xfailed or self.xpassed:
-                lines.extend(self._generate_failures())
-            if self.skipped:
-                lines.extend(self._generate_skipped())
+            if self.verbosity > 0:
+                # Verbose mode: show all failures (failed, xfailed, xpassed)
+                if self.failed or self.xfailed or self.xpassed:
+                    lines.extend(self._generate_failures())
+                if self.skipped:
+                    lines.extend(self._generate_skipped())
+            else:
+                # Default mode: show only regular failures + xpassed (unexpected passes)
+                if self.failed or self.xpassed:
+                    lines.extend(self._generate_failures(show_xfailed=False))
             if self.verbosity > 0:
                 lines.extend(self._generate_passes())
 
@@ -314,16 +320,23 @@ class MarkdownReport:
 
         return lines
 
-    def _generate_failures(self) -> list[str]:
-        """Generate failures section."""
+    def _generate_failures(self, *, show_xfailed: bool = True) -> list[str]:
+        """Generate failures section.
+
+        Args:
+            show_xfailed: Whether to include xfailed tests (expected failures).
+                         Unexpected passes (xpassed) are always shown.
+        """
         lines = ["## Failures", ""]
 
         for report in self.failed:
             lines.extend(self._format_failure(report))
 
-        for report in self.xfailed:
-            lines.extend(self._format_xfail(report))
+        if show_xfailed:
+            for report in self.xfailed:
+                lines.extend(self._format_xfail(report))
 
+        # Always show xpassed (unexpected passes are broken expectations)
         for report in self.xpassed:
             lines.extend(self._format_xpass(report))
 
