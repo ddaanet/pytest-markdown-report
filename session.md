@@ -1,6 +1,6 @@
 # Current Session Context
 
-**Status:** ✅ Token optimization plan COMPLETE
+**Status:** ✅ All work complete, tests verified
 
 ---
 
@@ -12,6 +12,9 @@
 ✅ **Phase 1:** Removed XFAIL/SKIPPED from default mode (failures only)
 ✅ **Phase 2:** Added -r flag support for customizing default mode output
 ✅ **Phase 3:** Updated AGENTS.md documentation
+✅ **Phase 4:** Test coverage for -r flag functionality (3 new tests)
+
+**Test Suite:** 25/25 tests passing
 
 **Key Features:**
 - Default mode shows failures + XPASS (broken expectations)

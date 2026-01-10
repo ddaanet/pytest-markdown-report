@@ -109,3 +109,44 @@ def test_no_trailing_blank_lines() -> None:
         actual = run_pytest("examples.py", *args)
         assert not actual.endswith("\n\n"), f"{mode} mode has trailing blank line"
         assert actual.endswith("\n"), f"{mode} mode missing final newline"
+
+
+def test_default_with_rs_flag() -> None:
+    """Test -rs shows skipped section in default mode."""
+    actual = run_pytest("examples.py", "-rs")
+
+    assert "## Failures" in actual
+    assert "test_edge_case FAILED" in actual
+
+    assert "## Skipped" in actual
+    assert "test_future_feature SKIPPED" in actual
+    assert "Not implemented yet" in actual
+
+    # XFAIL should still be hidden
+    assert "test_known_bug XFAIL" not in actual
+
+
+def test_default_with_rx_flag() -> None:
+    """Test -rx shows xfailed tests in default mode."""
+    actual = run_pytest("examples.py", "-rx")
+
+    assert "## Failures" in actual
+    assert "test_edge_case FAILED" in actual
+
+    assert "test_known_bug XFAIL" in actual
+    assert "Bug #123" in actual
+
+    # Skipped should still be hidden
+    assert "## Skipped" not in actual
+
+
+def test_default_with_rsx_flags() -> None:
+    """Test -rsx shows both skipped and xfailed in default mode."""
+    actual = run_pytest("examples.py", "-rsx")
+
+    assert "## Failures" in actual
+    assert "test_edge_case FAILED" in actual
+    assert "test_known_bug XFAIL" in actual
+
+    assert "## Skipped" in actual
+    assert "test_future_feature SKIPPED" in actual
