@@ -99,6 +99,10 @@ class MarkdownReport:
         self.verbosity = config.option.verbose
         self.quiet = config.option.verbose < 0
 
+        # Parse -r flag for what to show (s=skip, x=xfail, etc.)
+        # The -r flag is stored in the reportchars option
+        self.report_flags = getattr(config.option, "reportchars", "")
+
         self.reports = []
         self.passed = []
         self.failed = []
@@ -204,7 +208,14 @@ class MarkdownReport:
             self.failed.append(report)
 
     def _build_report_lines(self) -> list[str]:
-        """Build report lines based on test results and verbosity mode."""
+        """Build report lines based on test results and verbosity mode.
+
+        In default mode, respects -r flag for what to show:
+        - 's' in flags: show skipped section
+        - 'x' in flags: show xfailed section
+        - Verbose mode (-v) always shows all sections
+        - Quiet mode (-q) shows minimal output
+        """
         lines = []
 
         # Collection errors take priority
@@ -221,9 +232,12 @@ class MarkdownReport:
                 if self.skipped:
                     lines.extend(self._generate_skipped())
             else:
-                # Default mode: show only regular failures + xpassed (unexpected passes)
-                if self.failed or self.xpassed:
-                    lines.extend(self._generate_failures(show_xfailed=False))
+                # Default mode: show failures based on -r flags
+                show_xfailed = "x" in self.report_flags
+                if self.failed or self.xpassed or (show_xfailed and self.xfailed):
+                    lines.extend(self._generate_failures(show_xfailed=show_xfailed))
+                if "s" in self.report_flags and self.skipped:
+                    lines.extend(self._generate_skipped())
             if self.verbosity > 0:
                 lines.extend(self._generate_passes())
 
