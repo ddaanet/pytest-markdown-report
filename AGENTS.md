@@ -19,6 +19,11 @@ configurable verbosity levels.
 pip install .
 ```
 
+### Environment Notes
+
+**Sandbox mode**: Use `.venv/bin/x` to run commands directly from venv (e.g.,
+`.venv/bin/pytest`) because `uv run` fails in sandbox mode.
+
 ### Running Tests
 
 ```bash

@@ -62,8 +62,10 @@ def pytest_configure(config: Config) -> None:
     config._markdown_report = MarkdownReport(config)  # noqa: SLF001
     config.pluginmanager.register(config._markdown_report)  # noqa: SLF001
 
-    # Redirect stdout/stderr to suppress pytest output
-    config._markdown_report._redirect_output()  # noqa: SLF001
+    # Don't suppress output for special pytest modes (--help, --version)
+    if not (config.option.help or config.option.version):
+        # Redirect stdout/stderr to suppress pytest output
+        config._markdown_report._redirect_output()  # noqa: SLF001
 
 
 def pytest_unconfigure(config: Config) -> None:

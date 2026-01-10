@@ -21,6 +21,13 @@ test *ARGS:
     sync
     pytest {{ ARGS }}
 
+# Run token efficiency benchmark
+[no-exit-message]
+benchmark MODULE="tests/examples.py":
+    #!{{ bash_prolog }}
+    sync
+    python scripts/benchmark.py {{ MODULE }}
+
 # Format, check with complexity disabled, test
 [no-exit-message]
 lint: format
@@ -226,7 +233,7 @@ define_env_cmd () { if $sandboxed; then eval "$1() { .venv/bin/$1 \"\$@\"; }"; e
 define_env_cmd pytest
 define_env_cmd ruff
 define_env_cmd mypy
-define_env_cmd claudeutils
+define_env_cmd python
 '''
 
 # Fail if CLAUDECODE is set
