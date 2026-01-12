@@ -1,6 +1,16 @@
 # Test Report
 
-**Summary:** 5/8 passed, 1 failed, 1 skipped, 1 xfail
+**Summary:** 5/9 passed, 2 failed, 1 skipped, 1 xfail
+
+## Errors
+
+### tests/examples.py::test_setup_error ERROR in setup
+
+```python
+examples.py:80: in broken_fixture
+    raise RuntimeError(msg)
+E   RuntimeError: Fixture setup failed
+```
 
 ## Failures
 

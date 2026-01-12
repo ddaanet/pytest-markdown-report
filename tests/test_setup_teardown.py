@@ -38,8 +38,8 @@ def test_uses_broken_fixture(broken_fixture):
         # Should show 1 failure in summary
         assert "0/1 passed, 1 failed" in actual, "Summary should show setup failure"
 
-        # Should show in failures section with error details
-        assert "## Failures" in actual
+        # Should show in errors section with error details
+        assert "## Errors" in actual
         assert "test_uses_broken_fixture" in actual
         assert "RuntimeError: Setup failed" in actual
 
@@ -70,8 +70,8 @@ def test_uses_fixture(fixture_with_bad_teardown):
             "Teardown failure should count as failed"
         )
 
-        # Should show teardown error in failures
-        assert "## Failures" in actual
+        # Should show teardown error in errors section
+        assert "## Errors" in actual
         assert "test_uses_fixture" in actual
         assert "RuntimeError: Teardown failed" in actual
 
@@ -109,8 +109,8 @@ def test_teardown_fails(teardown_broken):
         # Both tests should show as failed
         assert "0/2 passed, 2 failed" in actual
 
-        # Both errors should appear
-        assert actual.count("## Failures") == 1
+        # Both errors should appear in Errors section
+        assert actual.count("## Errors") == 1
         assert "test_setup_fails" in actual
         assert "test_teardown_fails" in actual
 

@@ -71,3 +71,15 @@ def test_critical_path() -> None:
     result = {"status": "success", "timestamp": 123456}
     assert result["status"] == "success"
     assert "timestamp" in result
+
+
+@pytest.fixture
+def broken_fixture() -> None:
+    """Fixture that fails during setup."""
+    msg = "Fixture setup failed"
+    raise RuntimeError(msg)
+
+
+def test_setup_error(broken_fixture: None) -> None:
+    """Test with setup error."""
+    assert True

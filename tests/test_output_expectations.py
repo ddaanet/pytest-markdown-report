@@ -150,3 +150,74 @@ def test_default_with_rsx_flags() -> None:
 
     assert "## Skipped" in actual
     assert "test_future_feature SKIPPED" in actual
+
+
+def test_errors_separate_from_failures() -> None:
+    """Test that setup/teardown errors appear in separate ## Errors section."""
+    actual = run_pytest("examples.py", "-rE")
+
+    # Should have separate Errors section
+    assert "## Errors" in actual, (
+        "Expected '## Errors' section for setup/teardown errors"
+    )
+
+    # Setup error should appear in Errors section
+    assert "test_setup_error ERROR in setup" in actual, (
+        "Expected setup error in Errors section"
+    )
+
+    # Regular failures should still appear (errors and failures shown together with -rE)
+    assert "test_edge_case FAILED" in actual, "Failures should still be shown with -rE"
+
+
+def test_default_shows_errors_and_failures() -> None:
+    """Test that default mode (no -r flags) shows both errors and failures."""
+    actual = run_pytest("examples.py")
+
+    # Default should show both sections
+    assert "## Errors" in actual, "Default mode should show errors"
+    assert "## Failures" in actual, "Default mode should show failures"
+
+    # Both error and failure should appear
+    assert "test_setup_error ERROR in setup" in actual
+    assert "test_edge_case FAILED" in actual
+
+
+def test_rf_flag_hides_errors() -> None:
+    """Test -rf shows only failures, not errors."""
+    actual = run_pytest("examples.py", "-rf")
+
+    # Should have failures
+    assert "## Failures" in actual, "Should show failures with -rf"
+    assert "test_edge_case FAILED" in actual
+
+    # Should NOT have errors
+    assert "## Errors" not in actual, "Should not show errors with -rf flag"
+    assert "test_setup_error" not in actual
+
+
+def test_rp_flag_shows_passes() -> None:
+    """Test -rp shows passes in default mode (not just verbose)."""
+    actual = run_pytest("examples.py", "-rp")
+
+    # Should have failures (default)
+    assert "## Failures" in actual
+
+    # Should have passes section (from -rp flag)
+    assert "## Passes" in actual, "Expected '## Passes' section with -rp flag"
+
+    # Should list passing tests
+    assert "test_simple" in actual, "Should show passing test names"
+
+
+def test_verbose_shows_passes_regardless_of_rp() -> None:
+    """Test that -v shows passes even without -rp flag."""
+    actual_v = run_pytest("examples.py", "-v")
+    actual_v_without_rp = run_pytest("examples.py", "-v")
+
+    # Both should have passes (verbose always shows)
+    assert "## Passes" in actual_v
+    assert "## Passes" in actual_v_without_rp
+
+    # Verify they're the same
+    assert actual_v == actual_v_without_rp

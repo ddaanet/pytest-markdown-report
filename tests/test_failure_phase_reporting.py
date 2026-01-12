@@ -34,7 +34,7 @@ def test_uses_broken_fixture(broken_fixture):
 
     try:
         actual = run_pytest(str(test_file))
-        assert "test_uses_broken_fixture FAILED in setup" in actual
+        assert "test_uses_broken_fixture ERROR in setup" in actual
         assert "RuntimeError: Setup failed" in actual
     finally:
         test_file.unlink(missing_ok=True)
@@ -57,7 +57,7 @@ def test_uses_fixture(fixture_with_bad_teardown):
 
     try:
         actual = run_pytest(str(test_file))
-        assert "test_uses_fixture FAILED in teardown" in actual
+        assert "test_uses_fixture ERROR in teardown" in actual
         assert "RuntimeError: Teardown failed" in actual
     finally:
         test_file.unlink(missing_ok=True)
@@ -115,8 +115,8 @@ def test_teardown_fails(broken_teardown):
             "test_call_fails FAILED\n" in actual
             or "test_call_fails FAILED\r\n" in actual
         )
-        assert "test_setup_fails FAILED in setup" in actual
-        assert "test_teardown_fails FAILED in teardown" in actual
+        assert "test_setup_fails ERROR in setup" in actual
+        assert "test_teardown_fails ERROR in teardown" in actual
         assert "0/3 passed, 3 failed" in actual
     finally:
         test_file.unlink(missing_ok=True)

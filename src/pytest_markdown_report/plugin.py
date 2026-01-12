@@ -106,6 +106,7 @@ class MarkdownReport:
         self.reports = []
         self.passed = []
         self.failed = []
+        self.errors = []
         self.skipped = []
         self.xfailed = []
         self.xpassed = []
@@ -205,7 +206,11 @@ class MarkdownReport:
         elif report.passed:
             self.passed.append(report)
         elif report.failed:
-            self.failed.append(report)
+            # Separate call-phase failures from setup/teardown errors
+            if report.when == "call":
+                self.failed.append(report)
+            else:
+                self.errors.append(report)
 
     def _build_report_lines(self) -> list[str]:
         """Build report lines based on test results and verbosity mode.
@@ -226,7 +231,9 @@ class MarkdownReport:
         else:
             lines.extend(self._generate_summary())
             if self.verbosity > 0:
-                # Verbose mode: show all failures (failed, xfailed, xpassed)
+                # Verbose mode: show all failures and errors
+                if self.errors:
+                    lines.extend(self._generate_errors())
                 if self.failed or self.xfailed or self.xpassed:
                     lines.extend(self._generate_failures())
                 if self.skipped:
@@ -234,10 +241,15 @@ class MarkdownReport:
             else:
                 # Default mode: show failures based on -r flags
                 show_xfailed = "x" in self.report_flags
+                show_errors = "E" in self.report_flags
+                if show_errors and self.errors:
+                    lines.extend(self._generate_errors())
                 if self.failed or self.xpassed or (show_xfailed and self.xfailed):
                     lines.extend(self._generate_failures(show_xfailed=show_xfailed))
                 if "s" in self.report_flags and self.skipped:
                     lines.extend(self._generate_skipped())
+                if "p" in self.report_flags and self.passed:
+                    lines.extend(self._generate_passes())
             if self.verbosity > 0:
                 lines.extend(self._generate_passes())
 
@@ -289,15 +301,18 @@ class MarkdownReport:
     def _generate_summary(self) -> list[str]:
         """Generate summary line."""
         total_passed = len(self.passed)
-        total_failed = len(self.failed) + len(self.xpassed)
+        total_failed = len(self.failed) + len(self.errors) + len(self.xpassed)
         total_skipped = len(self.skipped)
         total_xfailed = len(self.xfailed)
         total = total_passed + total_failed + total_skipped + total_xfailed
 
         # Build summary parts
         parts = [f"{total_passed}/{total} passed"]
-        if total_failed > 0:
-            parts.append(f"{total_failed} failed")
+        # Count errors + failures + xpassed as "failed" for summary (backward compat)
+        if len(self.failed) + len(self.errors) + len(self.xpassed) > 0:
+            parts.append(
+                f"{len(self.failed) + len(self.errors) + len(self.xpassed)} failed"
+            )
         if total_skipped > 0:
             parts.append(f"{total_skipped} skipped")
         if total_xfailed > 0:
@@ -313,15 +328,18 @@ class MarkdownReport:
     def _generate_quiet(self) -> list[str]:
         """Generate quiet mode output."""
         total_passed = len(self.passed)
-        total_failed = len(self.failed) + len(self.xpassed)
+        total_failed = len(self.failed) + len(self.errors) + len(self.xpassed)
         total_skipped = len(self.skipped)
         total_xfailed = len(self.xfailed)
         total = total_passed + total_failed + total_skipped + total_xfailed
 
         # Build summary parts
         parts = [f"{total_passed}/{total} passed"]
-        if total_failed > 0:
-            parts.append(f"{total_failed} failed")
+        # Count errors + failures + xpassed as "failed" for summary (backward compat)
+        if len(self.failed) + len(self.errors) + len(self.xpassed) > 0:
+            parts.append(
+                f"{len(self.failed) + len(self.errors) + len(self.xpassed)} failed"
+            )
         if total_skipped > 0:
             parts.append(f"{total_skipped} skipped")
         if total_xfailed > 0:
@@ -354,6 +372,17 @@ class MarkdownReport:
         for report in self.xpassed:
             lines.extend(self._format_xpass(report))
 
+        return lines
+
+    def _generate_errors(self) -> list[str]:
+        """Generate errors section (setup/teardown failures).
+
+        Returns:
+            List of markdown lines for errors section
+        """
+        lines = ["## Errors", ""]
+        for report in self.errors:
+            lines.extend(self._format_failure(report, symbol="ERROR"))
         return lines
 
     def _generate_skipped(self) -> list[str]:
