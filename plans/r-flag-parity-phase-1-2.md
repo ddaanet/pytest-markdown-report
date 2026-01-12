@@ -379,9 +379,9 @@ if show_passes and self.passed:
 
 ---
 
-### Cycle 2.2: Test -rp Doesn't Show in Verbose (Verbose Shows All)
+### Cycle 2.2: Test -rp Doesn't Show in Verbose (Verbose Shows All) [REGRESSION]
 
-**RED: Verify verbose behavior unchanged**
+**GREEN immediately: Verify verbose behavior unchanged**
 
 **File:** `tests/test_output_expectations.py`
 
@@ -400,8 +400,8 @@ def test_verbose_shows_passes_regardless_of_rp() -> None:
     assert actual_v == actual_v_without_rp
 ```
 
-**Expected RED output:**
-This should actually pass (GREEN) immediately since verbose mode already shows passes.
+**Expected GREEN immediately:**
+This should pass immediately since verbose mode already shows passes.
 
 **Verify GREEN immediately:** Run `pytest tests/test_output_expectations.py::test_verbose_shows_passes_regardless_of_rp -v`
 - Should pass immediately (this is a regression test, not driving new code)

@@ -8,7 +8,7 @@
 
 ## Phase 7: Documentation
 
-### Cycle 7.1: Update AGENTS.md
+### Cycle 7.1: Update AGENTS.md [DEPENDS: 6.2]
 
 **No test needed - documentation only**
 
@@ -68,7 +68,7 @@ pytest -rE                   # Only errors (hide failures)
 
 ---
 
-### Cycle 7.2: Update README.md
+### Cycle 7.2: Update README.md [DEPENDS: 7.1]
 
 **No test needed - documentation only**
 
@@ -151,7 +151,7 @@ E   AssertionError: assert False == True
 
 ---
 
-### Cycle 7.3: Update session.md
+### Cycle 7.3: Update session.md [DEPENDS: 7.2]
 
 **No test needed - session tracking**
 
@@ -264,10 +264,16 @@ E   AssertionError: assert False == True
 5. ❌ Implementation seems to work but test still fails
 
 **When stopped:**
-- Document the cycle number and what happened
+- Document the cycle number and what happened in session.md
+- Investigate why test didn't fail as expected
+- If feature already works correctly:
+  - Convert test to regression test, mark `[REGRESSION]`
+  - Mark cycle complete, proceed to next
+- If test is incorrect:
+  - Fix test to ensure RED before continuing
+  - Do NOT proceed to next cycle until RED verified
 - Run `git diff` to see changes
-- Update session.md with status
-- Wait for guidance before continuing
+- Wait for guidance if unclear
 
 ---
 

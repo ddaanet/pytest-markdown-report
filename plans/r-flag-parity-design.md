@@ -33,8 +33,19 @@
 **Required actions when stopped:**
 - Document what happened in session.md
 - Investigate why test didn't fail as expected
-- Fix test to ensure RED before continuing
-- Do NOT proceed to next cycle
+- If feature already works correctly:
+  - Convert test to regression test, mark `[REGRESSION]`
+  - Mark cycle complete, proceed to next
+- If test is incorrect:
+  - Fix test to ensure RED before continuing
+  - Do NOT proceed to next cycle until RED verified
+
+### Pre-Implementation Spike
+
+Before starting TDD cycles, verify current behavior:
+1. Write throwaway tests for expected functionality
+2. Document pytest defaults that affect design (e.g., default reportchars)
+3. Identify cycles that may be `[REGRESSION]` tests
 
 ---
 

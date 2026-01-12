@@ -8,7 +8,7 @@
 
 ## Phase 5: Add Composite Flags (-ra, -rA, -rN)
 
-### Cycle 5.1: Test -ra Shows All Except Passes
+### Cycle 5.1: Test -ra Shows All Except Passes [DEPENDS: 4.2]
 
 **RED: Write test for -ra flag**
 
@@ -136,9 +136,9 @@ if show_passed_output and self.passed_with_output:
 
 ---
 
-### Cycle 5.2: Test -rA Shows Everything
+### Cycle 5.2: Test -rA Shows Everything [REGRESSION] [DEPENDS: 5.1]
 
-**RED: Write test for -rA flag**
+**GREEN immediately: Write test for -rA flag**
 
 **File:** `tests/test_output_expectations.py`
 
@@ -161,8 +161,8 @@ def test_rA_flag_shows_everything() -> None:
     assert has_passes, f"Should show passes section with -rA. Sections: {sections}"
 ```
 
-**Expected RED output:**
-Should actually pass (GREEN) immediately since `_should_show_section()` already handles "A" flag.
+**Expected GREEN immediately:**
+Should pass immediately since `_should_show_section()` already handles "A" flag.
 
 **Verify GREEN immediately:** Run `pytest tests/test_output_expectations.py::test_rA_flag_shows_everything -v`
 - Should pass immediately
@@ -170,9 +170,9 @@ Should actually pass (GREEN) immediately since `_should_show_section()` already 
 
 ---
 
-### Cycle 5.3: Test -rN Suppresses All Sections
+### Cycle 5.3: Test -rN Suppresses All Sections [REGRESSION] [DEPENDS: 5.1]
 
-**RED: Write test for -rN flag**
+**GREEN immediately: Write test for -rN flag**
 
 **File:** `tests/test_output_expectations.py`
 
@@ -196,8 +196,8 @@ def test_rN_flag_suppresses_all_sections() -> None:
     assert len(lines) <= 3, f"Should have minimal output (summary + maybe rerun). Got {len(lines)} lines: {lines}"
 ```
 
-**Expected RED output:**
-Should actually pass (GREEN) immediately since `_should_show_section()` already handles "N" flag.
+**Expected GREEN immediately:**
+Should pass immediately since `_should_show_section()` already handles "N" flag.
 
 **Verify GREEN immediately:** Run `pytest tests/test_output_expectations.py::test_rN_flag_suppresses_all_sections -v`
 - Should pass immediately
@@ -207,7 +207,7 @@ Should actually pass (GREEN) immediately since `_should_show_section()` already 
 
 ## Phase 6: Edge Cases and Integration
 
-### Cycle 6.1: Test Verbose Overrides -r Flags
+### Cycle 6.1: Test Verbose Overrides -r Flags [DEPENDS: 5.1]
 
 **RED: Write test verifying verbose ignores -r flags**
 
@@ -276,9 +276,9 @@ if self.verbosity > 0:
 
 ---
 
-### Cycle 6.2: Test Flag Combinations Work Together
+### Cycle 6.2: Test Flag Combinations Work Together [REGRESSION] [DEPENDS: 5.1, 6.1]
 
-**RED: Write comprehensive integration test**
+**GREEN immediately: Write comprehensive integration test**
 
 **File:** `tests/test_output_expectations.py`
 
@@ -303,8 +303,8 @@ def test_multiple_flags_combine_correctly() -> None:
     assert len(passes_sections) >= 1, f"-rpP should show passes. Got sections: {passes_sections}"
 ```
 
-**Expected RED output:**
-Should pass (GREEN) immediately if previous implementations were correct.
+**Expected GREEN immediately:**
+Should pass immediately if previous implementations were correct.
 
 **Verify GREEN immediately:** Run `pytest tests/test_output_expectations.py::test_multiple_flags_combine_correctly -v`
 - Should pass (integration/regression test)

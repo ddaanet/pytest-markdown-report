@@ -8,9 +8,9 @@
 
 ## Phase 3: Add -rP Flag (Passed with Output)
 
-### Cycle 3.1: Create Test Fixture with Output
+### Cycle 3.1: Create Test Fixture with Output [DEPENDS: 2.1]
 
-**RED: Add test that prints output**
+**Setup: Add test that prints output**
 
 **File:** `tests/examples.py`
 
@@ -33,7 +33,7 @@ def test_with_output() -> None:
 
 ---
 
-### Cycle 3.2: Test -rP Shows Passed Tests with Output
+### Cycle 3.2: Test -rP Shows Passed Tests with Output [DEPENDS: 3.1]
 
 **RED: Write test for -rP flag**
 
@@ -137,9 +137,9 @@ if self.passed_with_output:
 
 ## Phase 4: Add -rw Flag (Warnings)
 
-### Cycle 4.1: Create Test that Generates Warning
+### Cycle 4.1: Create Test that Generates Warning [DEPENDS: 3.2]
 
-**RED: Add test that triggers pytest warning**
+**Setup: Add test that triggers pytest warning**
 
 **File:** `tests/examples.py`
 
@@ -160,7 +160,7 @@ def test_with_warning() -> None:
 
 ---
 
-### Cycle 4.2: Test -rw Shows Warnings Section
+### Cycle 4.2: Test -rw Shows Warnings Section [DEPENDS: 4.1]
 
 **RED: Write test for -rw flag**
 
