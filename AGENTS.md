@@ -21,8 +21,9 @@ pip install .
 
 ### Environment Notes
 
-**Sandbox mode**: Use `.venv/bin/x` to run commands directly from venv (e.g.,
-`.venv/bin/pytest`) because `uv run` fails in sandbox mode.
+Use `pytest` directly (not `uv run` or `.venv/bin/pytest`).
+
+Use `/commit-commands:commit` to commit changes.
 
 ### Running Tests
 
@@ -207,10 +208,25 @@ instead.
    - Context files exceeding 200+ lines regularly
    - Reference: `claudeutils/agents/` for full architecture example
 
-**Handoff Protocol**: When asked to handoff to another agent, update `session.md` with:
-- Current state (1-2 sentences)
-- Immediate next action
+**Handoff Protocol**: When told "handoff", immediately update `session.md` with:
+- Completed tasks this session
+- Pending tasks remaining
 - Any blockers or gotchas
+
+Avoid churn: do not update session.md during the session, only at handoff.
+
+### Opus Orchestration
+
+**Sub-agent usage:**
+- Use sub-agents to distill inputs; be concise in all outputs
+- Sub-agents write dense, comprehensive, structured factual reports to file for reference
+- Remind sub-agents to prefer specialized tools (Read, Write, Edit, Glob, Grep) over Bash equivalents
+- For file access outside current directory, remind sub-agents to combine all access in a single multi-line script (one approval instead of many)
+
+**Workflow:**
+- Write design to `plans/` before validation (cheaper to update a file than re-output)
+- Temporary exploratory files go to `tmp/`
+- Once you have enough information to evaluate options for open issues, start user validation conversation
 
 ### Testing Guidelines
 
