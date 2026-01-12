@@ -1,3 +1,8 @@
+---
+name: plan-design
+description: Design phase planning for TDD implementation, producing terse design documents with decisions and rationale.
+---
+
 # Skill: plan:design
 
 Design phase planning for TDD implementation.

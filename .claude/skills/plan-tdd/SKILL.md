@@ -1,3 +1,8 @@
+---
+name: plan-tdd
+description: Create detailed TDD cycle plans from design documents with exact test specifications and stop conditions.
+---
+
 # Skill: plan:tdd
 
 Create detailed TDD cycle plan from design document.

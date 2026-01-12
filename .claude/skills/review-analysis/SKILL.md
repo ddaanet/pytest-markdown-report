@@ -1,3 +1,8 @@
+---
+name: review-analysis
+description: Analyze TDD session data comparing plan vs execution, assess compliance, and produce recommendations.
+---
+
 # Skill: review:analysis
 
 Analyze TDD session data and produce recommendations.

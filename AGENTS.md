@@ -217,6 +217,12 @@ Avoid churn: do not update session.md during the session, only at handoff.
 
 ### Opus Orchestration
 
+**Model selection:**
+- Simple mechanical tasks → write a script if shorter than prompting haiku (saves opus output tokens)
+- Simple cognitive tasks → use haiku
+- Use sonnet when it can be prompted in fewer tokens than haiku
+- Sonnet writing a script instead of delegating to haiku is also valid
+
 **Sub-agent usage:**
 - Use sub-agents to distill inputs; be concise in all outputs
 - Sub-agents write dense, comprehensive, structured factual reports to file for reference

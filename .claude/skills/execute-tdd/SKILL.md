@@ -1,3 +1,8 @@
+---
+name: execute-tdd
+description: Execute TDD cycles from plan, handling RED/GREEN/REFACTOR phases with structured logging.
+---
+
 # Skill: execute:tdd
 
 Execute TDD cycles from plan.

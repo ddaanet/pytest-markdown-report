@@ -1,3 +1,8 @@
+---
+name: review-updates
+description: Execute process improvements based on analysis, triaging recommendations and updating persistent files.
+---
+
 # Skill: review:updates
 
 Execute process improvements based on analysis.
