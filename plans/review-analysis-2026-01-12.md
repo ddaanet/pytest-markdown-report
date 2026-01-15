@@ -138,14 +138,15 @@ This suggests:
 - Implementation was **not minimal** - required researching pytest internals
 - RED → GREEN discipline likely broken (implementation exploration before test verification)
 
-**2. Dead Import Added**
+**2. Dead Import Added** ❌ **REVIEW ERROR - NOT ACTUALLY PRESENT**
 ```python
-# src/pytest_markdown_report/plugin.py line 6
+# CLAIMED: src/pytest_markdown_report/plugin.py line 6
 import warnings  # ❌ NEVER USED
 ```
-- Added `import warnings` but it's never used in the file
-- Indicates incomplete cleanup or misunderstanding of pytest warning capture
-- Should be removed
+- **Review claimed** `import warnings` was added but unused
+- **Post-review verification:** No such import exists in `plugin.py`
+- **Actual fact:** `warnings` is only imported in `tests/examples.py` where it IS used
+- **Conclusion:** This was a review analysis error; no action needed
 
 **3. Weak Test Assertions**
 ```python
@@ -391,13 +392,15 @@ assert "stderr: Status: OK" in actual
 
 **File:** `tests/test_output_expectations.py:226-237`
 
-**2. Remove Dead Import** ❌ HIGH PRIORITY
-```python
+**2. ~~Remove Dead Import~~** ✅ **NOT APPLICABLE - REVIEW ERROR**
+~~```python
 # Remove line 6 in plugin.py:
 import warnings  # ❌ DELETE THIS
-```
+```~~
 
-**File:** `src/pytest_markdown_report/plugin.py:6`
+**UPDATE:** Post-review verification confirms no dead import exists. This recommendation was based on incorrect analysis. No action needed.
+
+~~**File:** `src/pytest_markdown_report/plugin.py:6`~~
 
 **3. Verify Warning Content in Test** ❌ HIGH PRIORITY
 ```python
@@ -519,10 +522,12 @@ if "P" in self.report_flags and report.when == "call" and report.passed:
 5. Stop conditions not explicitly checked
 
 ### ❌ Critical Issues
-1. Dead import (`import warnings`) must be removed
-2. Test assertions must be strengthened (3 weak assertions identified)
-3. Warning content not verified in test
-4. TDD discipline questionable - insufficient documentation of RED/GREEN verification
+1. ~~Dead import (`import warnings`)~~ - **Incorrectly identified; does not exist in code**
+2. Test assertions must be strengthened (3 weak assertions identified) - **REMAINS**
+3. Warning content not verified in test - **REMAINS**
+4. TDD discipline questionable - insufficient documentation of RED/GREEN verification - **REMAINS**
+
+**Post-Review Note:** Lint fixes applied but weak test assertions remain unchanged. See "Post-Review Update" section below.
 
 ---
 
@@ -544,12 +549,12 @@ if "P" in self.report_flags and report.when == "call" and report.passed:
 
 **Quality Gates:**
 
-- [ ] All critical issues from this review fixed
+- [ ] All critical issues from this review fixed - **PARTIAL** (only lint issues)
 - [ ] Spike completed and documented
 - [ ] Session report template created
 - [ ] At least 2 negative test cases added
-- [ ] Dead import removed
-- [ ] Test assertions strengthened
+- [x] ~~Dead import removed~~ - **N/A** (issue was incorrectly identified)
+- [ ] Test assertions strengthened - **STILL REQUIRED**
 
 ---
 
@@ -560,3 +565,188 @@ Phase 3 & 4 achieved **functional success** (all tests passing, features working
 **Grade: C+ (Functional but non-compliant process)**
 
 **Recommendation:** Fix critical issues before Phase 5, strengthen verification practices, and improve test quality to ensure long-term maintainability and confidence.
+
+---
+
+## Post-Review Update (2026-01-12)
+
+**Reviewer:** Claude Sonnet 4.5
+**Action:** Lint fixes applied via Haiku agent
+
+### Lint Issues Fixed ✅
+
+Following the review analysis, a Haiku agent was tasked to fix all `just lint` errors without using `noqa` comments. The following issues were resolved:
+
+#### 1. tests/conftest_debug.py ✅
+- **Added module docstring** for D100 compliance
+- **Added class docstring** to `DebugPlugin` for D101 compliance
+- **Added method docstring** to `pytest_runtest_logreport()` for D102 compliance
+- **Added type annotation** `report: TestReport` for ANN001 compliance
+- **Added import** `from _pytest.reports import TestReport`
+
+#### 2. tests/examples.py ✅
+- **Moved imports to top level** (PLC0415) - `import warnings` moved from inside `test_with_warning()` to module top
+- **Added `import sys`** to support `test_with_output()`
+- **Fixed unused argument** (ARG001) - Added `_fixture = broken_fixture` usage in `test_setup_error()`
+- **Updated test implementation** - Changed `test_with_output()` to use `sys.stdout.write()` and `sys.stderr.write()` for proper output capture
+
+#### 3. tests/test_output_expectations.py ✅
+- **Fixed function name casing** (N802) - Renamed `test_rP_flag_shows_passed_with_output()` to `test_rp_flag_shows_passed_with_output()` (lowercase 'p')
+
+#### 4. Expected Output Files Updated ✅
+- **tests/expected/pytest-default.md** - Updated line numbers (96, 42, 20)
+- **tests/expected/pytest-verbose.md** - Updated line numbers (96, 42, 20, 57)
+
+### Critical Issue Correction ⚠️
+
+**Dead Import Issue - INCORRECTLY IDENTIFIED:**
+
+The review analysis claimed a dead `import warnings` existed in `src/pytest_markdown_report/plugin.py:6`. Upon verification:
+- ✅ **No dead import exists** in `plugin.py`
+- The `warnings` module is only imported in `tests/examples.py` where it IS used in `test_with_warning()`
+- The review was incorrect on this point
+
+**Updated Critical Issues List:**
+
+| Issue | Status | Notes |
+|-------|--------|-------|
+| ~~Dead import (`import warnings`)~~ | ❌ **NOT REAL** | This issue was incorrectly identified; no dead import exists |
+| Weak test assertions | ⚠️ **REMAINS** | Test assertions with "or" fallbacks still present |
+| Missing warning content verification | ⚠️ **REMAINS** | Test still doesn't verify "This is a test warning" |
+| Insufficient RED verification | ⚠️ **REMAINS** | Process issue, cannot be fixed in code |
+
+### Remaining Critical Issues ❌
+
+**1. Weak Test Assertions (UNCHANGED)**
+
+The weak test assertions identified in the review **remain in the code**:
+
+```python
+# tests/test_output_expectations.py:226-240 (now line 226)
+def test_rp_flag_shows_passed_with_output() -> None:
+    """Test -rP shows passed tests that captured output."""
+    actual = run_pytest("examples.py", "-rP")
+
+    # Still weak - allows either section to pass
+    assert "## Passes (with output)" in actual or "## Passes" in actual, (
+        "Expected passes section with -rP"
+    )
+
+    # Still weak - allows generic stdout keyword
+    assert "Debug: processing started" in actual or "stdout:" in actual, (
+        "Should show captured stdout"
+    )
+```
+
+**Why not fixed:** Lint fixes only addressed style/formatting issues, not test quality
+
+**2. Missing Warning Content Verification (UNCHANGED)**
+
+```python
+# tests/test_output_expectations.py:244-253
+def test_rw_flag_shows_warnings() -> None:
+    """Test -rw shows warnings section."""
+    actual = run_pytest("examples.py", "-rw")
+
+    assert "## Warnings" in actual
+    assert "test_with_warning" in actual
+    # Still missing: assert "This is a test warning" in actual
+```
+
+**Why not fixed:** Lint fixes were scoped to passing `just lint`, not test strengthening
+
+### Updated Quality Gates for Phase 5
+
+**Before starting Phase 5:**
+
+- [x] ~~All lint errors fixed~~ ✅ **COMPLETE** - `just lint` passes
+- [x] ~~Dead import removed~~ ✅ **N/A** - Issue was incorrectly identified
+- [ ] ⚠️ **Strengthen test assertions** - STILL REQUIRED (Recommendation #1)
+- [ ] ⚠️ **Add warning content verification** - STILL REQUIRED (Recommendation #3)
+- [ ] ⚠️ **Add negative test cases** - STILL REQUIRED (Recommendation #6)
+- [ ] ⚠️ **Run pre-implementation spike** - STILL REQUIRED (Recommendation #7)
+
+### Summary
+
+**Lint Status:** ✅ **CLEAN** - All `just lint` errors resolved
+**Code Quality:** ⚠️ **WEAK TESTS REMAIN** - Assertions still need strengthening
+**Test Coverage:** ⚠️ **INSUFFICIENT** - Negative test cases still needed
+**TDD Discipline:** ⚠️ **UNCERTAIN** - Process issues cannot be fixed retroactively
+
+**Revised Recommendation:** Before Phase 5, prioritize strengthening test assertions (Recommendations #1 and #3) and adding negative test cases (Recommendation #6). Lint compliance achieved but test quality remains the primary concern.
+
+---
+
+## Review Updates Applied (2026-01-12)
+
+**Reviewer:** Claude Sonnet 4.5
+**Action:** Applied critical and high-priority recommendations
+
+### Changes Applied ✅
+
+#### 1. Strengthened Test Assertions (Recommendation #1) ✅
+**File:** `tests/test_output_expectations.py:226-242`
+
+**Changes:**
+- Removed weak "or" fallback: `"## Passes (with output)" in actual or "## Passes" in actual`
+- Now requires exact section: `"## Passes (with output)" in actual`
+- Removed weak "or" fallback: `"Debug: processing started" in actual or "stdout:" in actual`
+- Now verifies both stdout and stderr content:
+  - `assert "Debug: processing started" in actual` (stdout)
+  - `assert "Status: OK" in actual` (stderr)
+
+**Impact:** Test now properly validates the specific section format and actual output content.
+
+#### 2. Added Warning Content Verification (Recommendation #3) ✅
+**File:** `tests/test_output_expectations.py:244-258`
+
+**Changes:**
+- Added assertion to verify warning message content:
+  ```python
+  assert "This is a test warning" in actual, (
+      "Should show warning message content 'This is a test warning'"
+  )
+  ```
+
+**Impact:** Test now validates that actual warning messages are captured and displayed, not just the warnings section exists.
+
+#### 3. Added Negative Test Cases (Recommendation #6) ✅
+**File:** `tests/test_output_expectations.py:261-281`
+
+**New tests added:**
+1. `test_rp_flag_without_output_shows_no_section()` - Verifies -rP doesn't create empty section when no output exists
+2. `test_rw_flag_without_warnings_shows_no_section()` - Verifies -rw doesn't create empty section when no warnings exist
+
+**Impact:** Ensures flags don't show sections inappropriately, strengthening implementation confidence.
+
+### Test Results ✅
+
+**Before updates:** 32/32 tests passing
+**After updates:** 34/34 tests passing (+2 new tests, zero regressions)
+
+### Updated Quality Gates Status
+
+**Critical Issues:**
+- [x] ~~Dead import removed~~ - N/A (incorrectly identified)
+- [x] **Strengthen test assertions** - ✅ COMPLETE
+- [x] **Add warning content verification** - ✅ COMPLETE
+
+**High Priority:**
+- [x] **Add negative test cases** - ✅ COMPLETE (2 new tests added)
+- [ ] Improve hook type signature (warning_message: object → WarningMessage) - Deferred to Phase 5
+- [ ] Document RED verification process - Process improvement, not code fix
+
+**Medium Priority:**
+- [ ] Pre-implementation spike - Planned for Phase 5
+- [ ] Update session report template - Process improvement
+
+### Summary
+
+All critical test quality issues identified in the review have been addressed:
+- ✅ Test assertions strengthened (no more weak "or" fallbacks)
+- ✅ Warning content verification added
+- ✅ Negative test cases added
+- ✅ All tests passing (34/34)
+- ✅ Zero regressions
+
+**Status:** Ready for Phase 5 implementation with improved test quality and coverage.
