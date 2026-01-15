@@ -1,13 +1,13 @@
 # Test Report
 
-**Summary:** 5/9 passed, 2 failed, 1 skipped, 1 xfail
+**Summary:** 7/11 passed, 2 failed, 1 skipped, 1 xfail
 
 ## Errors
 
 ### tests/examples.py::test_setup_error ERROR in setup
 
 ```python
-examples.py:80: in broken_fixture
+examples.py:96: in broken_fixture
     raise RuntimeError(msg)
 E   RuntimeError: Fixture setup failed
 ```
@@ -17,10 +17,10 @@ E   RuntimeError: Fixture setup failed
 ### tests/examples.py::test_edge_case FAILED
 
 ```python
-examples.py:40: in test_edge_case
+examples.py:42: in test_edge_case
     result = parser.extract_tokens(empty_data)
              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-examples.py:18: in extract_tokens
+examples.py:20: in extract_tokens
     return data[0]  # Will fail on empty list
            ^^^^^^^
 E   IndexError: list index out of range
@@ -31,7 +31,7 @@ E   IndexError: list index out of range
 **Reason:** Bug #123
 
 ```python
-examples.py:55: in test_known_bug
+examples.py:57: in test_known_bug
     raise ValueError(msg)
 E   ValueError: Known issue
 ```
@@ -49,3 +49,14 @@ E   ValueError: Known issue
 - tests/examples.py::test_simple
 - tests/examples.py::test_validation_pass
 - tests/examples.py::test_critical_path
+- tests/examples.py::test_with_output
+- tests/examples.py::test_with_warning
+
+## Passes (with output)
+
+- tests/examples.py::test_with_output PASSED
+  stdout: Debug: processing started
+  stderr: Status: OK
+## Warnings
+
+- tests/examples.py::test_with_warning: This is a test warning

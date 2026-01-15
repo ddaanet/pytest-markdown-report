@@ -110,6 +110,10 @@ class MarkdownReport:
         self.skipped = []
         self.xfailed = []
         self.xpassed = []
+        self.passed_with_output: list[tuple[TestReport, str, str]] = []
+        self.warnings: list[
+            tuple[str, str, str]
+        ] = []  # (warning_message, nodeid, location)
         self.collection_errors = []
 
         # For output redirection
@@ -144,12 +148,36 @@ class MarkdownReport:
         if report.failed:
             self.collection_errors.append(report)
 
+    def pytest_warning_recorded(
+        self,
+        warning_message: object,
+        when: str,  # noqa: ARG002 - Required by pytest hook spec
+        nodeid: str,
+        location: tuple[str, int, str] | None,
+    ) -> None:
+        """Capture pytest warnings."""
+        loc = f"{location[0]}:{location[1]}" if location else ""
+        # Extract message from warning object
+        msg = ""
+        if hasattr(warning_message, "message"):
+            msg = str(warning_message.message)
+        else:
+            msg = str(warning_message)
+        self.warnings.append((msg, nodeid, loc))
+
     def pytest_runtest_logreport(self, report: TestReport) -> None:
         """Collect test reports."""
         # Capture call phase (actual test execution)
         # Also capture all non-passing outcomes from any phase (setup/teardown)
         if report.when == "call" or report.outcome in ("skipped", "failed", "error"):
             self.reports.append(report)
+
+        # Track passed tests with captured output for -rP flag
+        if report.when == "call" and report.passed:
+            capstdout = getattr(report, "capstdout", "")
+            capstderr = getattr(report, "capstderr", "")
+            if capstdout or capstderr:
+                self.passed_with_output.append((report, capstdout, capstderr))
 
     def pytest_sessionfinish(
         self,
@@ -250,8 +278,18 @@ class MarkdownReport:
                     lines.extend(self._generate_skipped())
                 if "p" in self.report_flags and self.passed:
                     lines.extend(self._generate_passes())
+                # Passed with output section (with -rP flag)
+                if "P" in self.report_flags and self.passed_with_output:
+                    lines.extend(self._generate_passed_with_output())
+                # Warnings section (with -rw flag)
+                if "w" in self.report_flags and self.warnings:
+                    lines.extend(self._generate_warnings())
             if self.verbosity > 0:
                 lines.extend(self._generate_passes())
+                if self.passed_with_output:
+                    lines.extend(self._generate_passed_with_output())
+                if self.warnings:
+                    lines.extend(self._generate_warnings())
 
         return lines
 
@@ -457,4 +495,36 @@ class MarkdownReport:
         lines.extend(f"- {report.nodeid}" for report in self.passed)
         lines.append("")
 
+        return lines
+
+    def _generate_passed_with_output(self) -> list[str]:
+        """Generate passed tests with captured output section.
+
+        Returns:
+            List of markdown lines for passed with output section
+        """
+        lines = ["## Passes (with output)", ""]
+        for report, stdout, stderr in self.passed_with_output:
+            lines.append(f"- {report.nodeid} PASSED")
+            if stdout:
+                lines.append(f"  stdout: {stdout.strip()}")
+            if stderr:
+                lines.append(f"  stderr: {stderr.strip()}")
+        return lines
+
+    def _generate_warnings(self) -> list[str]:
+        """Generate warnings section.
+
+        Returns:
+            List of markdown lines for warnings section
+        """
+        lines = ["## Warnings", ""]
+        for msg, nodeid, loc in self.warnings:
+            if loc:
+                lines.append(f"- {loc}: {msg}")
+            elif nodeid:
+                lines.append(f"- {nodeid}: {msg}")
+            else:
+                lines.append(f"- {msg}")
+        lines.append("")
         return lines

@@ -28,21 +28,44 @@ benchmark MODULE="tests/examples.py":
     sync
     python scripts/benchmark.py {{ MODULE }}
 
+
 # Format, check with complexity disabled, test
 [no-exit-message]
 lint: format
     #!{{ bash_prolog }}
     sync
-    show "# ruff check"
-    safe ruff check -q --ignore=C901
-
-    show "# docformatter -c"
-    safe docformatter -c src tests
-    show "# mypy"
-    safe mypy
-    show "# pytest"
-    safe pytest -q
-    end-safe
+    report () {
+        header=$1; shift
+        if [[ ! -v tmpfile ]]; then
+            tmpfile=$(mktemp tmp/lint-XXXXXX)
+            trap "rm $tmpfile" EXIT
+        fi
+        safe "$@" > "$tmpfile"
+        if [ -s "$tmpfile" ]; then
+            show "# $header"
+            cat "$tmpfile"
+        fi
+    }
+    ruff_ignores=C901,PLR0904,PLR0911,PLR0912,PLR0913,PLR0914,PLR0915,PLR0916,PLR0917,PLR1701,PLR1702
+    report "ruff check" ruff check -q --ignore=$ruff_ignores
+    report "docformatter -c" docformatter -c src tests
+    report "mypy" mypy
+    pytest_hack () {
+        # Bug: pytest -q exits 0 even if tests fail
+        pytest -q > "$tmpfile"
+        if grep -q "^Re-run failed: " "$tmpfile"; then
+            show "# pytest"
+            cat "$tmpfile"
+            return 1
+        fi
+    }
+    safe pytest_hack
+    if end-safe; then
+        echo "${GREEN}✓$NORMAL Lint clean"
+    else
+        echo "${RED}✗$NORMAL Lint failed"
+        false
+    fi
 
 # Check code style
 [no-exit-message]
@@ -217,6 +240,7 @@ bash_prolog := \
     else { "/usr/bin/env bash -euo pipefail" } ) + "\n" + '''
 COMMAND="''' + style('command') + '''"
 ERROR="''' + style('error') + '''"
+RED=$'\033[31m'
 GREEN=$'\033[32m'
 NORMAL="''' + NORMAL + '''"
 safe () { "$@" || status=false; }
@@ -229,11 +253,6 @@ fail () { echo "${ERROR}$*${NORMAL}"; exit 1; }
 # (uv run crashes on system config access)
 sandboxed=$(test -w /tmp && echo "false" || echo "true")
 sync() { if ! $sandboxed; then uv sync -q "$@"; fi; }
-define_env_cmd () { if $sandboxed; then eval "$1() { .venv/bin/$1 \"\$@\"; }"; else eval "$1() { uv run $1 \"\$@\"; }"; fi; }
-define_env_cmd pytest
-define_env_cmd ruff
-define_env_cmd mypy
-define_env_cmd python
 '''
 
 # Fail if CLAUDECODE is set

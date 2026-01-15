@@ -221,3 +221,60 @@ def test_verbose_shows_passes_regardless_of_rp() -> None:
 
     # Verify they're the same
     assert actual_v == actual_v_without_rp
+
+
+def test_rp_flag_shows_passed_with_output() -> None:
+    """Test -rP shows passed tests that captured output."""
+    actual = run_pytest("examples.py", "-rP")
+
+    # Should have special section for passed with output (not generic passes)
+    assert "## Passes (with output)" in actual, (
+        "Expected '## Passes (with output)' section, not generic '## Passes'"
+    )
+
+    # Should show the test that has output
+    assert "test_with_output" in actual, "Should show test_with_output"
+
+    # Should show the actual captured output content
+    assert "Debug: processing started" in actual, "Should show captured stdout content"
+    assert "Status: OK" in actual, "Should show captured stderr content"
+
+
+def test_rw_flag_shows_warnings() -> None:
+    """Test -rw shows warnings section."""
+    actual = run_pytest("examples.py", "-rw")
+
+    # Should have warnings section with -rw flag
+    assert "## Warnings" in actual, "Expected '## Warnings' section with -rw flag"
+
+    # Should show the test that has warnings
+    assert "test_with_warning" in actual, (
+        "Should show test_with_warning in warnings section"
+    )
+
+    # Should show the actual warning message content
+    assert "This is a test warning" in actual, (
+        "Should show warning message content 'This is a test warning'"
+    )
+
+
+def test_rp_flag_without_output_shows_no_section() -> None:
+    """Test -rP doesn't show 'Passes (with output)' section when no output exists."""
+    # Run test that has no output (test_simple has no print statements)
+    actual = run_pytest("examples.py::test_simple", "-rP")
+
+    # Should NOT have the passes with output section
+    assert "## Passes (with output)" not in actual, (
+        "Should not show '## Passes (with output)' when no tests have output"
+    )
+
+
+def test_rw_flag_without_warnings_shows_no_section() -> None:
+    """Test -rw doesn't show warnings section when no warnings exist."""
+    # Run test that has no warnings
+    actual = run_pytest("examples.py::test_simple", "-rw")
+
+    # Should NOT have warnings section
+    assert "## Warnings" not in actual, (
+        "Should not show '## Warnings' section when no warnings exist"
+    )

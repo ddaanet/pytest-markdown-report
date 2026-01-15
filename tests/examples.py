@@ -1,5 +1,7 @@
 """Example test suite demonstrating pytest-markdown-report output."""
 
+import sys
+import warnings
 from typing import Never
 
 import pytest
@@ -73,6 +75,20 @@ def test_critical_path() -> None:
     assert "timestamp" in result
 
 
+def test_with_output() -> None:
+    """Test that passes but prints output."""
+    sys.stdout.write("Debug: processing started\n")
+    sys.stderr.write("Status: OK\n")
+    assert True
+
+
+@pytest.mark.filterwarnings("default")
+def test_with_warning() -> None:
+    """Test that generates a warning."""
+    warnings.warn("This is a test warning", UserWarning, stacklevel=2)
+    assert True
+
+
 @pytest.fixture
 def broken_fixture() -> None:
     """Fixture that fails during setup."""
@@ -81,5 +97,6 @@ def broken_fixture() -> None:
 
 
 def test_setup_error(broken_fixture: None) -> None:
-    """Test with setup error."""
+    """Test with setup error that uses broken_fixture."""
+    _fixture = broken_fixture
     assert True

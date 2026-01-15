@@ -1,79 +1,54 @@
-# Current Session: Phase 1 & 2 TDD Implementation - COMPLETE ✅
+# Current Session: Phase 3 & 4 TDD Implementation - COMPLETE ✅
 
-**Status:** ✅ FULLY COMPLETE - All Phase 1 & 2 cycles implemented (1.1-1.5, 2.1-2.2)
+**Status:** ✅ FULLY COMPLETE - All Phase 3 & 4 cycles implemented (3.1-3.2, 4.1-4.2)
 
-**Implementation Plan:** [r-flag-parity-phase-1-2.md](plans/r-flag-parity-phase-1-2.md)
+**Session Report:** [session-2026-01-12-phase3-4.md](plans/session-2026-01-12-phase3-4.md)
 
 ---
 
 ## ✅ All Cycles Completed
 
-### Cycle 1.1: Add Setup Error Test Fixture
-- ✅ Added `broken_fixture` fixture to tests/examples.py
-- ✅ Added `test_setup_error` test that exercises the fixture
-- ✅ Verified test properly captures setup errors
+### Phase 3: Add -rP Flag (Passed Tests with Output)
 
-### Cycle 1.2: Test That Errors Appear in Separate Section
-- ✅ Added `test_errors_separate_from_failures()` test
-- ✅ Implemented error tracking and separation logic in plugin.py
-- ✅ Added `self.errors` list to track setup/teardown errors separately
-- ✅ Modified `_categorize_single_report()` to separate by phase
-- ✅ Added `_generate_errors()` method for ## Errors section
-- ✅ Added -rE flag support in `_build_report_lines()`
+**Cycle 3.1: Create Test Fixture with Output**
+- ✅ Added `test_with_output()` to tests/examples.py (prints to stdout/stderr)
 
-### Cycle 1.3: Test Default Mode Shows Both Errors and Failures
-- ✅ Added `test_default_shows_errors_and_failures()` test
-- ✅ Test passes - errors show by default (pytest includes 'E' in reportchars)
-- ✅ No implementation needed - achieved as side effect of Cycle 1.2
+**Cycle 3.2: Implement -rP Flag**
+- ✅ Added `passed_with_output` tracking in `pytest_runtest_logreport()`
+- ✅ Created `_generate_passed_with_output()` method
+- ✅ Integrated -rP flag in `_build_report_lines()` for default + verbose modes
+- ✅ Test `test_rP_flag_shows_passed_with_output()` passes (RED → GREEN)
 
-### Cycle 1.4: Test -rf Flag Hides Errors
-- ✅ Added `test_rf_flag_hides_errors()` test
-- ✅ Test passes - errors correctly hidden with `-rf` flag
-- ✅ No implementation needed - already works via pytest's reportchars handling
+### Phase 4: Add -rw Flag (Warnings)
 
-### Cycle 1.5: Update Summary to Include Error Count
-- ✅ Updated `_generate_summary()` to count errors
-- ✅ Updated `_generate_quiet()` similarly
-- ✅ Summary properly includes error count in output
+**Cycle 4.1: Create Test Fixture with Warning**
+- ✅ Added `test_with_warning()` to tests/examples.py with `@pytest.mark.filterwarnings("default")`
 
-### Phase 2: Add -rp Flag Support
+**Cycle 4.2: Implement -rw Flag**
+- ✅ Implemented `pytest_warning_recorded()` hook to capture warnings during test execution
+- ✅ Created `_generate_warnings()` method
+- ✅ Integrated -rw flag in `_build_report_lines()` for default + verbose modes
+- ✅ Test `test_rw_flag_shows_warnings()` passes (RED → GREEN)
 
-**Cycle 2.1: Test -rp Flag Shows Passes**
-- ✅ Added `test_rp_flag_shows_passes()` test (RED)
-- ✅ Implemented -rp flag support in `_build_report_lines()`
-- ✅ Added logic: `if "p" in self.report_flags and self.passed: lines.extend(self._generate_passes())`
-- ✅ Test passes (GREEN)
+## Test Results
 
-**Cycle 2.2: Test Verbose Mode Always Shows Passes**
-- ✅ Added `test_verbose_shows_passes_regardless_of_rp()` test
-- ✅ Test passes (GREEN) - verbose mode unchanged
-- ✅ Confirmed: Verbose mode shows all sections regardless of -r flags
+- ✅ **32/32 tests passing** (was 28/28, added 4 new tests)
+- ✅ **Zero regressions**
+- ✅ Updated 3 expected output files with new test counts (7/11 instead of 6/10)
 
-### Test Compatibility Updates (From earlier sessions)
-- ✅ Updated existing tests to match new error categorization format
-- ✅ Updated 3 expected output files (default, quiet, verbose)
+## Files Modified
 
-## Summary of Implementation
-
-**Files Modified:**
-- `src/pytest_markdown_report/plugin.py`:
-  - Line 251-252: Added -rp flag support to show passes in default mode
-
-- `tests/test_output_expectations.py`:
-  - Added 4 new tests (cycles 1.3, 1.4, 2.1, 2.2)
-
-**Test Results:**
-- ✅ 14/14 tests in test_output_expectations.py pass
-- ✅ 30/30 total tests pass
-- ✅ No regressions
+- `src/pytest_markdown_report/plugin.py` - ~60 lines of implementation
+- `tests/examples.py` - 2 new test fixtures (11 lines)
+- `tests/test_output_expectations.py` - 2 new test functions (15 lines)
+- `tests/expected/*.md` - 3 files updated with new test counts/output
 
 ---
 
-## Ready for Next Phase
+## Next Steps
 
-**Next Steps:** Proceed to Phase 3 & 4 (cycles 3.1-4.2)
-- Phase 3: Add -rP flag (passed tests with output)
-- Phase 4: Add -rw flag (warnings)
+Ready for Phase 5 & 6:
+- Phase 5: Add -rA flag (all sections)
+- Phase 6: Add combined flag validation
 
-See [r-flag-parity-phase-3-4.md](plans/r-flag-parity-phase-3-4.md) for implementation details.
-
+See [r-flag-parity-phase-5-6.md](plans/r-flag-parity-phase-5-6.md) for next implementation plan.
