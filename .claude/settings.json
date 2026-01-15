@@ -8,14 +8,16 @@
       "Bash(git show:*)",
       "Bash(git diff:*)",
       "Bash(git status:*)",
-      "Bash(uv run pytest:*)",
-      "Bash(claudeutils tokens:*)"
+      "Bash(git commit:*)",
+      "Bash(pytest:*)",
+      "Bash(claudeutils tokens:*)",
+      "Bash(just test:*)",
+      "Bash(just check)",
+      "Bash(just lint)",
+      "Bash(just dev)"
     ],
     "deny": [
       "NotebookEdit"
-    ],
-    "ask": [
-      "Bash(git commit:*)"
     ]
   },
   "enabledPlugins": {

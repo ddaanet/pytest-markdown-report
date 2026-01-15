@@ -48,7 +48,7 @@ Write a concise handoff note with this structure:
 
 ### 3. Size Discipline
 - Keep session.md under ~100 lines
-- If content would exceed this, archive old content to `plans/archive/`
+- If content would exceed, compact by summarizing (git history preserves details)
 - Only preserve what the next agent needs to know
 
 ## Rules (from AGENTS.md)
@@ -56,3 +56,4 @@ Write a concise handoff note with this structure:
 - Focus on "what does the next agent need to know?"
 - Be concise - completed work summarized in 1-2 lines, not full details
 - Delete details after summarizing outcomes
+- Git history is the archive - no separate archive files needed

@@ -31,6 +31,29 @@ For each cycle:
 - Run full suite: `just test`
 - If other tests fail → handle individually (never batch)
 
+### Exploration Limit
+
+During GREEN phase, if implementation is not straightforward:
+
+**Allowed (1-2 attempts):**
+- Fix syntax errors, typos
+- Adjust minor details from plan
+
+**STOP and document if:**
+- Requires reading external documentation
+- Requires > 2 implementation attempts
+- Error is different from plan specification
+- Requires researching pytest/framework internals
+
+When stopping:
+1. Document what was tried
+2. Document what error occurred
+3. Document what information is needed
+4. Mark cycle as BLOCKED
+5. Await guidance from orchestrator
+
+Do NOT continue exploring. Extended exploration violates minimal GREEN principle.
+
 ### 3. REFACTOR Phase (optional)
 - Only if code is unclear
 - Run tests after any change

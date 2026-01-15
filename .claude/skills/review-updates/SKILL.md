@@ -42,6 +42,20 @@ Opus (high-judgment decisions)
    - Do not guess - ask
 
 ## Constraints
-- Only modify persistent files (AGENTS.md, skills)
+- Only modify persistent files (AGENTS.md, skills, plan templates)
 - Do not modify session-specific files (session.md, plans/*.md)
+- **Do NOT modify source code** - code fixes from review should be applied BEFORE invoking this skill
 - Preserve existing content - add/refine, don't rewrite
+
+## Scope Clarification
+This skill addresses **process issues** identified in review analysis. Code fixes should already be applied before this skill runs.
+
+**In scope (process improvements):**
+- Agent guidance gaps → Update AGENTS.md
+- Missing enforcement in workflows → Update relevant skills
+- Documentation templates needed → Create in plans/templates/
+
+**Out of scope (done before this skill):**
+- Source code fixes
+- Test improvements
+- Lint/style issues
