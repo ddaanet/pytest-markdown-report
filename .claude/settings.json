@@ -28,5 +28,6 @@
     "context7@claude-plugins-official": true,
     "feature-dev@claude-plugins-official": false,
     "hookify@claude-plugins-official": false
-  }
+  },
+  "plansDirectory": "plans/"
 }
