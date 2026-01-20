@@ -34,18 +34,6 @@ benchmark MODULE="tests/examples.py":
 lint: format
     #!{{ bash_prolog }}
     sync
-    report () {
-        header=$1; shift
-        if [[ ! -v tmpfile ]]; then
-            tmpfile=$(mktemp tmp/lint-XXXXXX)
-            trap "rm $tmpfile" EXIT
-        fi
-        safe "$@" > "$tmpfile"
-        if [ -s "$tmpfile" ]; then
-            show "# $header"
-            cat "$tmpfile"
-        fi
-    }
     ruff_ignores=C901,PLR0904,PLR0911,PLR0912,PLR0913,PLR0914,PLR0915,PLR0916,PLR0917,PLR1701,PLR1702
     report "ruff check" ruff check -q --ignore=$ruff_ignores
     report "docformatter -c" docformatter -c src tests
@@ -95,7 +83,9 @@ format:
     # reverse the patch (-R) and dry run (-C), and it prefixes the path with before and
     # after (-p1 ignores the first component of the path). Hence `patch -RCp1`.
     docformatter --diff src tests | patch-and-print -RCp1 >> "$tmpfile" || true
+
     # Markdown formatting disabled for the moment.
+
     # Must find replacement for dprint that handles backticks correctly.
     modified=$(sort --unique < "$tmpfile")
     if [ -n "$modified" ] ; then
@@ -249,10 +239,23 @@ show () { echo "$COMMAND$*$NORMAL"; }
 visible () { show "$@"; "$@"; }
 fail () { echo "${ERROR}$*${NORMAL}"; exit 1; }
 
-# Use direct venv binaries when in Claude Code sandbox
-# (uv run crashes on system config access)
-sandboxed=$(test -w /tmp && echo "false" || echo "true")
-sync() { if ! $sandboxed; then uv sync -q "$@"; fi; }
+# Do not uv sync when in Claude Code sandbox
+sync() { test -w /tmp &&  uv sync -q "$@"; }
+
+HEADER_STYLE=$'\033[1;36m'  # Bold cyan
+report () {
+    # Usage: report "header" command args
+    header=$1; shift
+    if [[ ! -v tmpfile ]]; then
+        tmpfile=$(mktemp tmp/lint-XXXXXX)
+        trap "rm $tmpfile" EXIT
+    fi
+    safe "$@" > "$tmpfile"
+    if [ -s "$tmpfile" ]; then
+        echo "${HEADER_STYLE}# $header${NORMAL}"
+        cat "$tmpfile"
+    fi
+}
 '''
 
 # Fail if CLAUDECODE is set
