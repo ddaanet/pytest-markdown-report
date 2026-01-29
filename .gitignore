@@ -9,7 +9,6 @@ __pycache__/
 *.swp
 *~
 /.env
-/.envrc
 /.venv/
 /build/
 /dist/

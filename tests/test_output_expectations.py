@@ -259,7 +259,11 @@ def test_rw_flag_shows_warnings() -> None:
 
 
 def test_rp_flag_without_output_shows_no_section() -> None:
-    """Test -rP doesn't show 'Passes (with output)' section when no output exists."""
+    """Test -rP flag without output shows no section.
+
+    When no tests have output, -rP should not show the 'Passes (with output)'
+    section.
+    """
     # Run test that has no output (test_simple has no print statements)
     actual = run_pytest("examples.py::test_simple", "-rP")
 

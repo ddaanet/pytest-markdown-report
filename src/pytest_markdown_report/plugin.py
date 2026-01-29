@@ -249,48 +249,60 @@ class MarkdownReport:
         - Verbose mode (-v) always shows all sections
         - Quiet mode (-q) shows minimal output
         """
-        lines = []
-
         # Collection errors take priority
         if self.collection_errors:
-            lines.extend(self._generate_collection_errors())
-        elif self.quiet:
-            lines.extend(self._generate_quiet())
-        else:
-            lines.extend(self._generate_summary())
-            if self.verbosity > 0:
-                # Verbose mode: show all failures and errors
-                if self.errors:
-                    lines.extend(self._generate_errors())
-                if self.failed or self.xfailed or self.xpassed:
-                    lines.extend(self._generate_failures())
-                if self.skipped:
-                    lines.extend(self._generate_skipped())
-            else:
-                # Default mode: show failures based on -r flags
-                show_xfailed = "x" in self.report_flags
-                show_errors = "E" in self.report_flags
-                if show_errors and self.errors:
-                    lines.extend(self._generate_errors())
-                if self.failed or self.xpassed or (show_xfailed and self.xfailed):
-                    lines.extend(self._generate_failures(show_xfailed=show_xfailed))
-                if "s" in self.report_flags and self.skipped:
-                    lines.extend(self._generate_skipped())
-                if "p" in self.report_flags and self.passed:
-                    lines.extend(self._generate_passes())
-                # Passed with output section (with -rP flag)
-                if "P" in self.report_flags and self.passed_with_output:
-                    lines.extend(self._generate_passed_with_output())
-                # Warnings section (with -rw flag)
-                if "w" in self.report_flags and self.warnings:
-                    lines.extend(self._generate_warnings())
-            if self.verbosity > 0:
-                lines.extend(self._generate_passes())
-                if self.passed_with_output:
-                    lines.extend(self._generate_passed_with_output())
-                if self.warnings:
-                    lines.extend(self._generate_warnings())
+            return self._generate_collection_errors()
+        if self.quiet:
+            return self._generate_quiet()
 
+        lines = self._generate_summary()
+        if self.verbosity > 0:
+            lines.extend(self._build_verbose_sections())
+        else:
+            lines.extend(self._build_default_sections())
+        return lines
+
+    def _build_verbose_sections(self) -> list[str]:
+        """Build all sections for verbose mode.
+
+        Verbose mode shows all sections regardless of -r flags.
+        """
+        lines = []
+        if self.errors:
+            lines.extend(self._generate_errors())
+        if self.failed or self.xfailed or self.xpassed:
+            lines.extend(self._generate_failures())
+        if self.skipped:
+            lines.extend(self._generate_skipped())
+        lines.extend(self._generate_passes())
+        if self.passed_with_output:
+            lines.extend(self._generate_passed_with_output())
+        if self.warnings:
+            lines.extend(self._generate_warnings())
+        return lines
+
+    def _build_default_sections(self) -> list[str]:
+        """Build sections for default mode based on -r flags.
+
+        Respects -r flags: 'E' for errors, 'x' for xfailed, 's' for skipped,
+        'p' for passes, 'P' for passed with output, 'w' for warnings.
+        Failed and xpassed tests are always shown.
+        """
+        lines = []
+        show_xfailed = "x" in self.report_flags
+        show_errors = "E" in self.report_flags
+        if show_errors and self.errors:
+            lines.extend(self._generate_errors())
+        if self.failed or self.xpassed or (show_xfailed and self.xfailed):
+            lines.extend(self._generate_failures(show_xfailed=show_xfailed))
+        if "s" in self.report_flags and self.skipped:
+            lines.extend(self._generate_skipped())
+        if "p" in self.report_flags and self.passed:
+            lines.extend(self._generate_passes())
+        if "P" in self.report_flags and self.passed_with_output:
+            lines.extend(self._generate_passed_with_output())
+        if "w" in self.report_flags and self.warnings:
+            lines.extend(self._generate_warnings())
         return lines
 
     def _write_report(self, lines: list[str]) -> None:
