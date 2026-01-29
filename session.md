@@ -1,76 +1,57 @@
-# Session Handoff: 2026-01-29
+# Session Handoff: 2026-01-30
 
-**Status:** Phase 5-6 TDD runbook ready for execution
+**Status:** Phase 5-6 ready for execution; prepare-runbook.py validation fixed
 
 ## Completed This Session
 
-**Phase 5-6 design and planning:**
-- Created design document: plans/phase-5-6-design.md
-- Created TDD runbook: plans/phase-5-6-composite-flags/runbook.md (6 cycles)
-- Reviewed and fixed runbook with tdd-plan-reviewer agent (2 review rounds)
-- Installed tdd-plan-reviewer agent and new skills from agent-core
+**prepare-runbook.py validation fix:**
+- Fixed validation to allow Cycle 0.x (spike cycles)
+- Added cycle type detection: spike (0.x), regression (`[REGRESSION]` in title), standard
+- Spike cycles: skip RED/GREEN validation (exploratory only)
+- Regression cycles: skip RED validation (GREEN only, no RED expected)
+- Updated patterns.md to document 0.x as valid for pre-implementation spikes
+- Generated execution artifacts for Phase 5-6 runbook successfully (6 cycles)
 
-**Critical design finding:**
-- pytest default `reportchars` is `"fE"`, not empty string
-- Existing Phase 5-6 plan assumed empty string (dead code check)
-- Corrected `_should_show_section()` logic in design (no empty-string special case)
-
-**TDD runbook structure:**
-- Cycle 0.1: Pre-implementation spike (verify current behavior)
-- Cycle 1.1: Implement `_should_show_section()` helper + refactor `_build_default_sections()` (RED/GREEN)
-- Cycles 1.2-1.3: Test `-rA` and `-rN` flags (REGRESSION - expected GREEN immediately)
-- Cycles 2.1-2.2: Test verbose override and flag combinations (REGRESSION)
-
-**Runbook review findings (v1):**
-- 3 critical violations: Prescriptive code in Cycle 1.1 GREEN phase
-- Fixed: Replaced implementation code with behavior descriptions + hints
-- v2 review: PASS - ready for execution
-
-**New agents and skills installed:**
-- .claude/agents/tdd-plan-reviewer.md (runbook review agent)
-- .claude/skills/review-tdd-plan (skill for runbook review)
-- .claude/skills/commit-context (efficient commit skill)
-- .claude/skills/handoff-lite (haiku handoff skill)
-- .claude/skills/next (pending work skill)
-- .claude/skills/token-efficient-bash (bash script pattern)
-- .claude/hooks/ (hook directory added)
-
-**Agent-core submodule:**
-- Updated to b3a87b3 (relative symlinks for portability)
-- Symlinks changed from absolute paths to relative (../../agent-core/*)
+**Design review findings:**
+- Created design at plans/prepare-runbook-0x-fix/design.md
+- Design review flagged 80% gold-plating: proposed updating 4 documentation files for conventions not proven at scale
+- Implemented minimal fix: validation code + patterns.md correction only
+- Deferred doc updates until 3-5 more runbooks prove conventions stable
+- Files: agent-core/bin/prepare-runbook.py, agent-core/skills/plan-tdd/references/patterns.md
 
 ## Pending Tasks
 
-- Run prepare-runbook.py on Phase 5-6 runbook (MANDATORY before /orchestrate)
-- Execute runbook with /orchestrate (or manual cycle-by-cycle)
+- Update plan-adhoc and plan-tdd skills to run prepare-runbook.py directly (for permission authorization)
+- Execute Phase 5-6 runbook with /orchestrate
 - Phase 7 (documentation updates) after Phase 5-6 complete
 
 ## Blockers / Gotchas
 
-- None
+**prepare-runbook.py invocation:**
+- Must use `agent-core/bin/prepare-runbook.py` directly (executable with shebang)
+- NOT `python3 agent-core/bin/prepare-runbook.py`
+- Requires sandbox disabled for file creation in .claude/agents/
 
 ## Next Steps
 
-1. Run prepare-runbook.py to generate step files:
-   ```bash
-   python3 agent-core/bin/prepare-runbook.py plans/phase-5-6-composite-flags/runbook.md
-   ```
-2. Execute Phase 5-6 runbook with /orchestrate
-3. Proceed to Phase 7 (documentation) when complete
+1. Commit prepare-runbook.py validation fix with gitmoji
+2. Execute Phase 5-6 runbook: `plans/phase-5-6-composite-flags/runbook.md`
+3. Update plan-adhoc and plan-tdd skills to invoke prepare-runbook.py correctly
+4. Phase 7 (documentation) after Phase 5-6 complete
 
 ## Recent Learnings
 
-**Method extraction for complexity reduction:**
-- Anti-pattern: Single method with nested conditionals and duplicated logic blocks
-- Correct pattern: Extract mode-specific methods with clear single responsibilities
-- Rationale: `_build_report_lines` had complexity 16, branches 17. Extracting `_build_verbose_sections` and `_build_default_sections` reduced main method to 4 branches while distributing logic cleanly. Each extracted method has focused purpose and clear docstring.
+**Premature documentation is overengineering:**
+- Anti-pattern: Documenting conventions after 1 usage example, updating 4 files for patterns agents discovered organically
+- Correct pattern: Ship minimal fix (validation code only), defer documentation until 3-5 runbooks prove conventions stable
+- Rationale: Phase 5-6 runbook used 0.x and `[REGRESSION]` without documentation. Design review flagged 10:1 ratio (150 doc lines : 15 code lines). Agents discover patterns organically—document after proving stable, not before. Let usage inform documentation.
 
-**TDD runbook prescriptive code:**
-- Anti-pattern: Providing complete implementation code in GREEN phases (turns agent into code copier)
-- Correct pattern: Describe behavior + provide implementation hints (let tests drive discovery)
-- Rationale: Cycle 1.1 initially had 52 lines of prescriptive code. Review flagged violations. Fixed by replacing code blocks with behavior descriptions and sequencing hints. Tests should drive exact implementation structure, not scripts.
+**Convention-based validation over metadata:**
+- Anti-pattern: Adding frontmatter fields or explicit type markers for cycle types
+- Correct pattern: Detect types from existing conventions (0.x numbering, `[REGRESSION]` in title)
+- Rationale: Runbook already encoded type information in cycle numbers and titles. Parsing existing conventions avoided new metadata layer requiring enforcement and format changes. Cleaner and zero syntax additions.
 
-**pytest default flag verification:**
-- Anti-pattern: Assuming API behavior without measurement
-- Correct pattern: Verify assumptions with code before designing around them
-- Rationale: Existing plan assumed `reportchars` defaults to empty string. Measured actual behavior: defaults to `"fE"`. This changed design significantly (eliminated dead code check in `_should_show_section()`). Always measure, don't assume.
+**Design review catches gold-plating:**
+- Anti-pattern: "While we're here" additions, premature abstraction, disproportionate documentation
+- Correct pattern: Delegate design review to quiet-task agent focused on simplicity, ship MVP, defer nice-to-haves
+- Rationale: Initial design proposed 5-file change (1 code, 4 docs). Review identified 80% gold-plating and recommended 1-file MVP. Saved implementing unused documentation and avoided premature taxonomy solidification.
