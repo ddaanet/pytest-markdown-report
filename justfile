@@ -12,7 +12,17 @@ help:
 
 # Full development workflow
 [no-exit-message]
-dev: format check test
+dev: format precommit
+
+# Run all checks
+[no-exit-message]
+precommit:
+    #!{{ bash_prolog }}
+    sync
+    run-checks
+    safe pytest-quiet
+    #run-line-limits
+    report-end-safe "Precommit"
 
 # Run test suite
 [no-exit-message]
@@ -20,15 +30,19 @@ test *ARGS:
     #!{{ bash_prolog }}
     sync
     pytest {{ ARGS }}
+    report-end-safe "Tests"
 
-# Run token efficiency benchmark
+# Check file line limits
 [no-exit-message]
-benchmark MODULE="tests/examples.py":
+line-limits:
     #!{{ bash_prolog }}
+    echo "Line limits check disabled"
+    exit
     sync
-    python scripts/benchmark.py {{ MODULE }}
+    run-line-limits
+    report-end-safe "Line limits"
 
-
+# Format, check with complexity disabled, test
 # Format, check with complexity disabled, test
 [no-exit-message]
 lint: format
@@ -38,42 +52,22 @@ lint: format
     report "ruff check" ruff check -q --ignore=$ruff_ignores
     report "docformatter -c" docformatter -c src tests
     report "mypy" mypy
-    pytest_hack () {
-        # Bug: pytest -q exits 0 even if tests fail
-        pytest -q > "$tmpfile"
-        if grep -q "^Re-run failed: " "$tmpfile"; then
-            show "# pytest"
-            cat "$tmpfile"
-            return 1
-        fi
-    }
-    safe pytest_hack
-    if end-safe; then
-        echo "${GREEN}✓$NORMAL Lint clean"
-    else
-        echo "${RED}✗$NORMAL Lint failed"
-        false
-    fi
+    safe pytest-quiet
+    report-end-safe "Lint"
 
 # Check code style
 [no-exit-message]
 check:
     #!{{ bash_prolog }}
     sync
-    show "# ruff check"
-    safe ruff check -q
-    show "# docformatter -c"
-    safe docformatter -c src tests
-    show "# mypy"
-    safe mypy
-    end-safe
+    run-checks
+    report-end-safe "Checks"
 
 # Format code
 format:
     #!{{ bash_prolog }}
     sync
-    tmpfile=$(mktemp tmp-fmt-XXXXXX)
-    trap "rm $tmpfile" EXIT
+    set-tmpfile
     patch-and-print() {
         patch "$@" | sed -Ene "/^patching file '/s/^[^']+'([^']+)'/\\1/p"
     }
@@ -84,9 +78,10 @@ format:
     # after (-p1 ignores the first component of the path). Hence `patch -RCp1`.
     docformatter --diff src tests | patch-and-print -RCp1 >> "$tmpfile" || true
 
-    # Markdown formatting disabled for the moment.
+    # Format markdown files with remark-cli
+    # TODO: fix markdown reformatting bugs and re-enable
+    # npx remark . -o --quiet && git diff --name-only | grep '\.md$' >> "$tmpfile" || true
 
-    # Must find replacement for dprint that handles backticks correctly.
     modified=$(sort --unique < "$tmpfile")
     if [ -n "$modified" ] ; then
         bold=$'\033[1m'; nobold=$'\033[22m'
@@ -240,21 +235,53 @@ visible () { show "$@"; "$@"; }
 fail () { echo "${ERROR}$*${NORMAL}"; exit 1; }
 
 # Do not uv sync when in Claude Code sandbox
-sync() { test -w /tmp &&  uv sync -q "$@"; }
+sync() { if [ -w /tmp ]; then uv sync -q; fi; }
+set-tmpfile() {
+    if [[ ! -v tmpfile ]]; then
+        tmpfile=$(mktemp tmp/justfile-XXXXXX)
+        trap "rm $tmpfile" EXIT
+    fi
+}
 
 HEADER_STYLE=$'\033[1;36m'  # Bold cyan
 report () {
     # Usage: report "header" command args
     header=$1; shift
-    if [[ ! -v tmpfile ]]; then
-        tmpfile=$(mktemp tmp/lint-XXXXXX)
-        trap "rm $tmpfile" EXIT
-    fi
+    set-tmpfile
     safe "$@" > "$tmpfile"
     if [ -s "$tmpfile" ]; then
         echo "${HEADER_STYLE}# $header${NORMAL}"
         cat "$tmpfile"
     fi
+}
+
+pytest-quiet () {
+    # Bug: pytest -q exits 0 even if tests fail
+    set-tmpfile
+    pytest -q > "$tmpfile"
+    if grep -q "^Re-run failed: " "$tmpfile"; then
+        show "# pytest"
+        cat "$tmpfile"
+        return 1
+    fi
+}
+
+run-checks() {
+    report "ruff check" ruff check -q
+    report "docformatter -c" docformatter -c src tests
+    report "mypy" mypy
+}
+
+run-line-limits() {
+    ./scripts/check_line_limits.sh
+}
+
+report-end-safe() {
+    if end-safe
+    then echo "${GREEN}✓$NORMAL $1 OK"
+    else echo "${RED}✗$NORMAL $1 failed"
+    fi
+    end-safe
 }
 '''
 
@@ -263,7 +290,6 @@ report () {
 [private]
 _fail_if_claudecode:
     #!{{ bash_prolog }}
-    if [ "${CLAUDECODE:-}" != "" ]; then
-        echo -e '{{ style("error") }}⛔️ Denied: use agent recipes{{ NORMAL }}'
-        exit 1
+    if [ "${CLAUDECODE:-}" != "" ]
+    then fail "⛔️ Denied: Protected recipe"
     fi
