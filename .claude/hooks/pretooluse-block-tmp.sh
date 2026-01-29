@@ -1,0 +1,1 @@
+../../agent-core/hooks/pretooluse-block-tmp.sh

@@ -1,1 +1,1 @@
-/Users/david/code/pytest-md/agent-core/agents/tdd-task.md
+../../agent-core/agents/tdd-task.md

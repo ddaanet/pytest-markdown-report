@@ -1,1 +1,1 @@
-/Users/david/code/pytest-md/agent-core/agents/quiet-task.md
+../../agent-core/agents/quiet-task.md
