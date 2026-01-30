@@ -115,8 +115,9 @@ def test_default_with_rs_flag() -> None:
     """Test -rs shows skipped section in default mode."""
     actual = run_pytest("examples.py", "-rs")
 
-    assert "## Failures" in actual
-    assert "test_edge_case FAILED" in actual
+    # With -rs, only skipped section shown (failures gated on f flag)
+    assert "## Failures" not in actual
+    assert "test_edge_case FAILED" not in actual
 
     assert "## Skipped" in actual
     assert "test_future_feature SKIPPED" in actual
@@ -130,9 +131,10 @@ def test_default_with_rx_flag() -> None:
     """Test -rx shows xfailed tests in default mode."""
     actual = run_pytest("examples.py", "-rx")
 
+    # With -rx, xfailed shown in Failures section
+    # (failures gated on f flag, but xfailed gate on x)
     assert "## Failures" in actual
-    assert "test_edge_case FAILED" in actual
-
+    assert "test_edge_case FAILED" not in actual  # Regular failures should not show
     assert "test_known_bug XFAIL" in actual
     assert "Bug #123" in actual
 
@@ -144,10 +146,12 @@ def test_default_with_rsx_flags() -> None:
     """Test -rsx shows both skipped and xfailed in default mode."""
     actual = run_pytest("examples.py", "-rsx")
 
+    # With -rsx, xfailed shown in Failures section
     assert "## Failures" in actual
-    assert "test_edge_case FAILED" in actual
+    assert "test_edge_case FAILED" not in actual  # Regular failures should not show
     assert "test_known_bug XFAIL" in actual
 
+    # Skipped should show
     assert "## Skipped" in actual
     assert "test_future_feature SKIPPED" in actual
 
@@ -166,8 +170,10 @@ def test_errors_separate_from_failures() -> None:
         "Expected setup error in Errors section"
     )
 
-    # Regular failures should still appear (errors and failures shown together with -rE)
-    assert "test_edge_case FAILED" in actual, "Failures should still be shown with -rE"
+    # Regular failures should NOT appear with -rE (only errors shown)
+    assert "test_edge_case FAILED" not in actual, (
+        "Failures should not be shown with -rE"
+    )
 
 
 def test_default_shows_errors_and_failures() -> None:
@@ -200,8 +206,8 @@ def test_rp_flag_shows_passes() -> None:
     """Test -rp shows passes in default mode (not just verbose)."""
     actual = run_pytest("examples.py", "-rp")
 
-    # Should have failures (default)
-    assert "## Failures" in actual
+    # Should NOT have failures (f flag not present with -rp)
+    assert "## Failures" not in actual
 
     # Should have passes section (from -rp flag)
     assert "## Passes" in actual, "Expected '## Passes' section with -rp flag"
@@ -281,4 +287,107 @@ def test_rw_flag_without_warnings_shows_no_section() -> None:
     # Should NOT have warnings section
     assert "## Warnings" not in actual, (
         "Should not show '## Warnings' section when no warnings exist"
+    )
+
+
+def test_ra_flag_shows_all_except_passes() -> None:
+    """Test -ra shows all sections except regular passes."""
+    actual = run_pytest("examples.py", "-ra")
+
+    # Should have all sections except regular passes
+    assert "## Failures" in actual, "Should show failures with -ra"
+    assert "## Errors" in actual, "Should show errors with -ra"
+    assert "## Skipped" in actual, "Should show skipped with -ra"
+    assert "## Warnings" in actual, "Should show warnings with -ra"
+
+    # Should NOT have Passes section (but may have "Passes (with output)")
+    lines = actual.split("\n")
+    sections = [line for line in lines if line.startswith("## ")]
+
+    # Check no plain "## Passes" section (without "with output")
+    has_plain_passes = any(s == "## Passes" for s in sections)
+    assert not has_plain_passes, (
+        f"Should not show plain passes with -ra. Sections: {sections}"
+    )
+
+
+def test_rA_flag_shows_everything() -> None:  # noqa: N802
+    """Test -rA shows all sections including passes."""
+    actual = run_pytest("examples.py", "-rA")
+
+    # Should have all sections
+    assert "## Failures" in actual, "Should show failures with -rA"
+    assert "## Errors" in actual, "Should show errors with -rA"
+    assert "## Skipped" in actual, "Should show skipped with -rA"
+    assert "## Passes" in actual, "Should show passes with -rA"
+    assert "## Warnings" in actual, "Should show warnings with -rA"
+
+    # Verify Passes section exists (plain passes, not just with output)
+    lines = actual.split("\n")
+    sections = [line for line in lines if line.startswith("## ")]
+    has_passes = any("Passes" in s for s in sections)
+    assert has_passes, f"Should show passes section with -rA. Sections: {sections}"
+
+
+def test_rN_flag_suppresses_all_sections() -> None:  # noqa: N802
+    """Test -rN suppresses all sections (like quiet mode)."""
+    actual = run_pytest("examples.py", "-rN")
+
+    # Should have summary
+    assert "**Summary:**" in actual, "Should have summary line with -rN"
+
+    # Should NOT have any section headers
+    assert "## Failures" not in actual, "Should not show failures with -rN"
+    assert "## Errors" not in actual, "Should not show errors with -rN"
+    assert "## Skipped" not in actual, "Should not show skipped with -rN"
+    assert "## Passes" not in actual, "Should not show passes with -rN"
+
+    # Should be minimal output (summary + maybe rerun command)
+    lines = [line for line in actual.split("\n") if line.strip()]
+    assert len(lines) <= 3, (
+        f"Should have minimal output with -rN. Got {len(lines)} lines: {lines}"
+    )
+
+
+def test_verbose_ignores_r_flags() -> None:
+    """Test that -v shows all sections regardless of -r flags."""
+    actual_v = run_pytest("examples.py", "-v")
+    actual_vrf = run_pytest("examples.py", "-v", "-rf")
+    actual_vrN = run_pytest("examples.py", "-v", "-rN")  # noqa: N806
+
+    # All should have same sections (verbose overrides -r)
+    for label, actual in [
+        ("plain -v", actual_v),
+        ("-v -rf", actual_vrf),
+        ("-v -rN", actual_vrN),
+    ]:
+        assert "## Failures" in actual, (
+            f"{label} should show failures (verbose overrides)"
+        )
+        assert "## Passes" in actual, f"{label} should show passes (verbose overrides)"
+        assert "## Errors" in actual, f"{label} should show errors (verbose overrides)"
+
+    # Specifically verify -v -rN still shows sections (verbose wins over -rN suppress)
+    assert "## Failures" in actual_vrN, "Verbose should override -rN suppression"
+    assert "## Passes" in actual_vrN, "Verbose should override -rN suppression"
+
+
+def test_multiple_flags_combine_correctly() -> None:
+    """Test that multiple -r flags combine correctly."""
+    # -rsx should show skipped and xfailed
+    actual_rsx = run_pytest("examples.py", "-rsx")
+    assert "## Skipped" in actual_rsx, "-rsx should show skipped"
+    assert "test_known_bug XFAIL" in actual_rsx, "-rsx should show xfailed"
+
+    # -rEf should show errors and failures
+    actual_rEf = run_pytest("examples.py", "-rEf")  # noqa: N806
+    assert "## Errors" in actual_rEf, "-rEf should show errors"
+    assert "## Failures" in actual_rEf, "-rEf should show failures"
+
+    # -rpP should show both types of passes
+    actual_rpP = run_pytest("examples.py", "-rpP")  # noqa: N806
+    passes_sections = [line for line in actual_rpP.split("\n") if "## Passes" in line]
+    # Should have at least one passes section
+    assert len(passes_sections) >= 1, (
+        f"-rpP should show passes. Got sections: {passes_sections}"
     )

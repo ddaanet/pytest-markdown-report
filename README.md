@@ -52,6 +52,45 @@ pytest -v
 pytest -q
 ```
 
+### Controlling Output Sections
+
+Use `-r` flags to show/hide specific sections in default mode:
+
+```bash
+# Show skipped tests
+pytest -rs
+
+# Show expected failures (xfail)
+pytest -rx
+
+# Show passed tests
+pytest -rp
+
+# Show all except passes
+pytest -ra
+
+# Show everything
+pytest -rA
+
+# Suppress all sections (summary only)
+pytest -rN
+```
+
+**Available flags:**
+- `f` = failed tests (shown by default)
+- `E` = errors (shown by default)
+- `s` = skipped tests
+- `x` = xfailed tests
+- `X` = xpassed tests (shown by default)
+- `p` = passed tests
+- `P` = passed tests with output
+- `w` = warnings
+- `a` = all except passes
+- `A` = all including passes
+- `N` = none (suppress sections)
+
+**Note:** Verbose mode (`-v`) shows all sections regardless of `-r` flags.
+
 ### Options
 
 **Save to file**:
@@ -79,7 +118,17 @@ pytest --markdown-rerun-cmd=""
 ````markdown
 # Test Report
 
-**Summary:** 2/5 passed, 3 failed
+**Summary:** 2/7 passed, 3 failed, 1 error, 1 skipped
+
+## Errors
+
+### test_database.py::test_with_db ERROR in setup
+
+```python
+conftest.py:15: in db_connection
+    raise ConnectionError("Database unavailable")
+E   ConnectionError: Database unavailable
+```
 
 ## Failures
 
@@ -90,17 +139,7 @@ test_validation.py:42: in test_invalid_input
     assert validate(input) == expected
 E   AssertionError: assert False == True
 ```
-
-### test_database.py::test_with_db FAILED in setup
-
-```python
-conftest.py:15: in db_connection
-    raise ConnectionError("Database unavailable")
-E   ConnectionError: Database unavailable
-```
 ````
-
-**Note:** Setup and teardown failures show phase notation (e.g., `FAILED in setup`) to distinguish fixture issues from test assertion failures.
 
 ### Verbose Mode (-v)
 

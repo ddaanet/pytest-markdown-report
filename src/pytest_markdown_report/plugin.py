@@ -121,6 +121,31 @@ class MarkdownReport:
         self._original_stderr = None
         self._capture_buffer = None
 
+    def _should_show_section(self, flag: str) -> bool:
+        """Check if a section should be shown based on report flags.
+
+        Handles composite flags: "N" (suppress all), "A" (show all),
+        "a" (all except p/P). Falls back to checking if flag is in
+        self.report_flags.
+
+        Args:
+            flag: Single character flag (f, E, s, x, p, P, w)
+
+        Returns:
+            True if section should be shown, False otherwise
+        """
+        # "N" suppresses all sections
+        if "N" in self.report_flags:
+            return False
+        # "A" shows all sections
+        if "A" in self.report_flags:
+            return True
+        # "a" shows all except passes (p, P)
+        if "a" in self.report_flags:
+            return flag not in ("p", "P")
+        # Fall back to individual flag check
+        return flag in self.report_flags
+
     def _redirect_output(self) -> None:
         """Redirect stdout/stderr to suppress pytest output."""
         self._original_stdout = sys.stdout
@@ -284,24 +309,39 @@ class MarkdownReport:
     def _build_default_sections(self) -> list[str]:
         """Build sections for default mode based on -r flags.
 
-        Respects -r flags: 'E' for errors, 'x' for xfailed, 's' for skipped,
-        'p' for passes, 'P' for passed with output, 'w' for warnings.
-        Failed and xpassed tests are always shown.
+        Respects -r flags: 'E' for errors, 'f' for failures/xpassed, 's' for skipped,
+        'x' for xfailed, 'p' for passes, 'P' for passed with output, 'w' for warnings.
+        Handles composite flags: 'a' (all except p/P), 'A' (all), 'N' (none).
         """
         lines = []
-        show_xfailed = "x" in self.report_flags
-        show_errors = "E" in self.report_flags
-        if show_errors and self.errors:
+        show_xfailed = self._should_show_section("x")
+        show_failures = self._should_show_section("f")
+
+        if self._should_show_section("E") and self.errors:
             lines.extend(self._generate_errors())
-        if self.failed or self.xpassed or (show_xfailed and self.xfailed):
-            lines.extend(self._generate_failures(show_xfailed=show_xfailed))
-        if "s" in self.report_flags and self.skipped:
+
+        # Show failures section if we have:
+        # - Regular failures and f flag, OR
+        # - XFailed tests and x flag, OR
+        # - XPassed tests and f flag
+        if (
+            (self.failed and show_failures)
+            or (self.xfailed and show_xfailed)
+            or (self.xpassed and show_failures)
+        ):
+            lines.extend(
+                self._generate_failures(
+                    show_xfailed=show_xfailed, show_failed=show_failures
+                )
+            )
+
+        if self._should_show_section("s") and self.skipped:
             lines.extend(self._generate_skipped())
-        if "p" in self.report_flags and self.passed:
+        if self._should_show_section("p") and self.passed:
             lines.extend(self._generate_passes())
-        if "P" in self.report_flags and self.passed_with_output:
+        if self._should_show_section("P") and self.passed_with_output:
             lines.extend(self._generate_passed_with_output())
-        if "w" in self.report_flags and self.warnings:
+        if self._should_show_section("w") and self.warnings:
             lines.extend(self._generate_warnings())
         return lines
 
@@ -402,17 +442,21 @@ class MarkdownReport:
 
         return lines
 
-    def _generate_failures(self, *, show_xfailed: bool = True) -> list[str]:
+    def _generate_failures(
+        self, *, show_xfailed: bool = True, show_failed: bool = True
+    ) -> list[str]:
         """Generate failures section.
 
         Args:
             show_xfailed: Whether to include xfailed tests (expected failures).
-                         Unexpected passes (xpassed) are always shown.
+            show_failed: Whether to include regular failed tests.
+            Unexpected passes (xpassed) are always shown unless all are False.
         """
         lines = ["## Failures", ""]
 
-        for report in self.failed:
-            lines.extend(self._format_failure(report))
+        if show_failed:
+            for report in self.failed:
+                lines.extend(self._format_failure(report))
 
         if show_xfailed:
             for report in self.xfailed:

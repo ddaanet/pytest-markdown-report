@@ -45,31 +45,48 @@ The `MarkdownReport` class orchestrates report generation:
 
 Test outcomes are categorized and displayed in separate sections:
 
-- `failed`: Regular test failures → **## Failures** section (full traceback, always shown)
+- `failed`: Test assertion failures (call phase) → **## Failures** section
+- `errors`: Setup/teardown/collection errors → **## Errors** section
 - `xfailed`: Expected failures (`@pytest.mark.xfail` that fail) → **## Failures** section
-  (shown in verbose mode or with `-rx` flag)
-- `xpassed`: Unexpected passes (xfail tests that pass) → **## Failures** section
-  (always shown, counted as failures since they break expectations)
+- `xpassed`: Unexpected passes (xfail tests that pass) → **## Failures** section (always shown)
 - `skipped`: Tests marked skip or conditional skips → **## Skipped** section
-  (shown in verbose mode or with `-rs` flag)
-- `passed`: Successful tests → **## Passes** section (verbose mode only)
+- `passed`: Successful tests → **## Passes** section
+- `passed_with_output`: Passing tests with captured output → **## Passes (with output)** section
+- `warnings`: Pytest warnings → **## Warnings** section
 
 **Display modes:**
-- **Default mode**: Shows only failures + xpassed. Use `-rs` to add skipped section, `-rx` to add xfail section
+- **Default mode**: Respects -r flags (defaults to fEX: failures + errors + xpassed)
 - **Verbose mode (-v)**: Always shows all sections regardless of -r flags
 - **Quiet mode (-q)**: Shows only summary line
 
-**Section order:** Summary → Failures → Skipped → Passes
+**Available -r flags:**
+- `f` = failed tests (default: shown)
+- `E` = errors in setup/teardown (default: shown)
+- `s` = skipped tests
+- `x` = xfailed tests
+- `X` = xpassed tests (default: shown)
+- `p` = passed tests
+- `P` = passed tests with captured output
+- `w` = pytest warnings
+- `a` = all except passes (shortcut for fEsxXw)
+- `A` = all including passes (shortcut for fEsxXpPw)
+- `N` = none (suppress all sections except summary)
 
-**Setup/teardown handling:** Captures failures and errors from all test phases (setup,
-call, teardown). Setup errors and teardown failures appear in Failures section with full
-traceback.
+**Examples:**
+```bash
+pytest                       # Default: failures + errors + xpassed
+pytest -rs                   # Add skipped section
+pytest -rx                   # Add xfailed section
+pytest -rsx                  # Show skipped + xfailed
+pytest -rp                   # Add passes
+pytest -ra                   # Show all except passes
+pytest -rA                   # Show everything
+pytest -rN                   # Summary only (like -q)
+pytest -rf                   # Only failures (hide errors)
+pytest -rE                   # Only errors (hide failures)
+```
 
-**Phase reporting:** Failures in setup or teardown phases display explicit phase notation
-(e.g., "FAILED in setup", "FAILED in teardown") to distinguish them from call-phase test
-failures. Call-phase failures show just "FAILED" since this is the implicit default. This
-provides semantic clarity about whether the test assertion failed, fixture setup broke, or
-cleanup failed.
+**Section order:** Summary → Errors → Failures → Skipped → Warnings → Passes → Passes (with output)
 
 ## Resource Management
 
