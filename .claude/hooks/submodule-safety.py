@@ -1,0 +1,1 @@
+../../agent-core/hooks/submodule-safety.py
