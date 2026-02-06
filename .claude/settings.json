@@ -1,23 +1,80 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(git:*)",
+      "Bash(wc:*)",
+      "Bash(claudeutils:*)",
+      "Bash(just:*)",
+      "Bash(pytest:*)",
+      "Bash(ruff:*)",
+      "Bash(mypy:*)",
+      "Bash(pbcopy:*)",
+      "Bash(agent-core/bin/prepare-runbook.py:*)",
+      "Skill",
+      "WebSearch"
+    ],
+    "deny": [
+      "NotebookEdit",
+      "Bash(git push:*)",
+      "WebFetch(domain:http-intake.logs.*.datadoghq.com)"
+    ]
+  },
   "attribution": {
     "commit": "",
     "pr": ""
   },
-  "permissions": {
-    "allow": [
-      "Bash(git show:*)",
-      "Bash(git diff:*)",
-      "Bash(git status:*)",
-      "Bash(git commit:*)",
-      "Bash(pytest:*)",
-      "Bash(claudeutils tokens:*)",
-      "Bash(just test:*)",
-      "Bash(just check)",
-      "Bash(just lint)",
-      "Bash(just dev)"
+  "plansDirectory": "plans/claude/",
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true,
+    "excludedCommands": ["git", "agent-core/bin/prepare-runbook.py"]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash $CLAUDE_PROJECT_DIR/.claude/hooks/pretooluse-block-tmp.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash $CLAUDE_PROJECT_DIR/.claude/hooks/pretooluse-symlink-redirect.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 $CLAUDE_PROJECT_DIR/.claude/hooks/submodule-safety.py"
+          }
+        ]
+      }
     ],
-    "deny": [
-      "NotebookEdit"
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 $CLAUDE_PROJECT_DIR/.claude/hooks/submodule-safety.py"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 $CLAUDE_PROJECT_DIR/agent-core/hooks/userpromptsubmit-shortcuts.py",
+            "timeout": 5
+          }
+        ]
+      }
     ]
   },
   "enabledPlugins": {
@@ -28,6 +85,5 @@
     "context7@claude-plugins-official": true,
     "feature-dev@claude-plugins-official": false,
     "hookify@claude-plugins-official": false
-  },
-  "plansDirectory": "plans/"
+  }
 }

@@ -16,7 +16,8 @@
 - **dev/design-decisions.md** - Design rationale and trade-offs
 
 ### Current Work
-- @session.md - Current session handoff context (update only on handoff)
+- @agents/session.md - Current session handoff context (update only on handoff)
+- @agents/learnings.md - Accumulated learnings (append-only, soft limit 80 lines)
 
 ---
 
@@ -57,10 +58,9 @@
 
 **Information hierarchy:**
 - **CLAUDE.md** - Persistent, long-lived information (architecture, commands, guidelines)
-- **session.md** - Current session context, handoff notes, temporary analysis
+- **agents/session.md** - Current session context, handoff notes, temporary analysis
+- **agents/learnings.md** - Accumulated learnings and insights
 - **plans/** - Implementation plans, code reviews, specifications
-
-**When to create agents/ directory**: Not needed until project has multiple specialized roles, sustained multi-week development, or context files exceeding 200+ lines regularly.
 
 ### Opus Orchestration
 
