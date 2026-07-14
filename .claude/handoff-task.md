@@ -1,8 +1,7 @@
 ## Current task
 
-The dev→main reconciliation is complete and verified (dev is now an ancestor of main, main's tooling won, 39/39 tests pass, tree clean); only optional cleanup of reconciliation scaffolding remains.
+No work in progress — the dev→main reconciliation, agent-core backout, and CLAUDE.md refresh are all finished; main now stands as a clean non-agent-core project.
 
 ## Open decisions
 
-- Whether to delete the `backup-main-pre-rebase` ref (pre-rebase main, `ea28df6`) and the now-redundant `dev` ref (fully contained in main) — keep until confident in the rebased history, then drop.
-- Whether to strip the now-inert agent-core hook wiring still tracked on main (`.claude/hooks`/`.claude/skills`/`.claude/agents` symlinks, `.gitmodules`) plus the temporary no-op `agent-core/hooks/submodule-safety.py` on disk — kept only to stop this session's cached broken hooks from blocking; a fresh session reloading main's hook-free settings makes it unnecessary.
+- Whether to re-adopt agent-core later in a controlled way (restore the submodule from the external repo + wire hooks into `settings.json`) or keep main hook-free. The backout removed all local skills/hooks/fragments; their content survives only in the external agent-core repo.
