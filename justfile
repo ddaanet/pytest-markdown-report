@@ -67,22 +67,21 @@ check:
 format:
     #!{{ bash_prolog }}
     sync
-    set-tmpfile
+    tmpfile=$(mktemp tmp-fmt-XXXXXX)
+    trap 'rm -f "$tmpfile"' EXIT
     patch-and-print() {
-        patch "$@" | sed -Ene "/^patching file '/s/^[^']+'([^']+)'/\\1/p"
+        patch "$@" | sed -Ene "s/^(patching|checking) file '?([^']+)'?\$/\\2/p"
     }
-    ruff check -q --fix-only --diff | patch-and-print >> "$tmpfile" || true
-    ruff format -q --diff | patch-and-print >> "$tmpfile" || true
+    # ruff emits diffs with plain paths (no a/ b/ prefix), so patch needs -p0.
+    ruff check -q --fix-only --diff | patch-and-print -p0 >> "$tmpfile" || true
+    ruff format -q --diff | patch-and-print -p0 >> "$tmpfile" || true
     # docformatter --diff applies the change *and* outputs the diff, so we need to
-    # reverse the patch (-R) and dry run (-C), and it prefixes the path with before and
-    # after (-p1 ignores the first component of the path). Hence `patch -RCp1`.
-    docformatter --diff src tests | patch-and-print -RCp1 >> "$tmpfile" || true
-
-    # Format markdown files with remark-cli
-    # TODO: fix markdown reformatting bugs and re-enable
-    # npx remark . -o --quiet && git diff --name-only | grep '\.md$' >> "$tmpfile" || true
-
-    modified=$(sort --unique < "$tmpfile")
+    # reverse the patch (-R) and dry run (--dry-run), and it prefixes the path with before
+    # and after (-p1 ignores the first component of the path). Hence `patch -Rp1 --dry-run`.
+    docformatter --diff src tests | patch-and-print -Rp1 --dry-run >> "$tmpfile" || true
+    # Markdown formatting disabled for the moment.
+    # Must find replacement for dprint that handles backticks correctly.
+    modified=$(sort -u < "$tmpfile")
     if [ -n "$modified" ] ; then
         bold=$'\033[1m'; nobold=$'\033[22m'
         red=$'\033[31m'; resetfg=$'\033[39m'
@@ -144,7 +143,7 @@ release *ARGS: _fail_if_claudecode dev
                 fi
             fi
 
-            version=$(git log -1 --format=%s | grep -oP '(?<=Release ).*')
+            version=$(git log -1 --format=%s | sed -E 's/.*Release //')
             current_branch=$(git symbolic-ref -q --short HEAD || echo "")
             cleanup_release "HEAD~1" "$current_branch" "$version"
             echo "${GREEN}✓${NORMAL} Rollback complete"
@@ -220,9 +219,9 @@ release *ARGS: _fail_if_claudecode dev
 
 # Bash prolog
 [private]
-bash_prolog := \
-    ( if trace == "true" { "/usr/bin/env bash -xeuo pipefail" } \
-    else { "/usr/bin/env bash -euo pipefail" } ) + "\n" + '''
+bash_prolog := "/usr/bin/env bash\n" + \
+    ( if trace == "true" { "set -xeuo pipefail" } \
+    else { "set -euo pipefail" } ) + "\n" + '''
 COMMAND="''' + style('command') + '''"
 ERROR="''' + style('error') + '''"
 RED=$'\033[31m'
@@ -234,55 +233,9 @@ show () { echo "$COMMAND$*$NORMAL"; }
 visible () { show "$@"; "$@"; }
 fail () { echo "${ERROR}$*${NORMAL}"; exit 1; }
 
-# Do not uv sync when in Claude Code sandbox
-sync() { if [ -w /tmp ]; then uv sync -q; fi; }
-set-tmpfile() {
-    if [[ ! -v tmpfile ]]; then
-        tmpfile=$(mktemp tmp/justfile-XXXXXX)
-        trap "rm $tmpfile" EXIT
-    fi
-}
-
-HEADER_STYLE=$'\033[1;36m'  # Bold cyan
-report () {
-    # Usage: report "header" command args
-    header=$1; shift
-    set-tmpfile
-    safe "$@" > "$tmpfile"
-    if [ -s "$tmpfile" ]; then
-        echo "${HEADER_STYLE}# $header${NORMAL}"
-        cat "$tmpfile"
-    fi
-}
-
-pytest-quiet () {
-    # Bug: pytest -q exits 0 even if tests fail
-    set-tmpfile
-    pytest -q > "$tmpfile"
-    if grep -q "^Re-run failed: " "$tmpfile"; then
-        show "# pytest"
-        cat "$tmpfile"
-        return 1
-    fi
-}
-
-run-checks() {
-    report "ruff check" ruff check -q
-    report "docformatter -c" docformatter -c src tests
-    report "mypy" mypy
-}
-
-run-line-limits() {
-    ./scripts/check_line_limits.sh
-}
-
-report-end-safe() {
-    if end-safe
-    then echo "${GREEN}✓$NORMAL $1 OK"
-    else echo "${RED}✗$NORMAL $1 failed"
-    fi
-    end-safe
-}
+# Tools (pytest, ruff, mypy, python) come from the direnv-activated venv on PATH.
+# Do not uv sync when in Claude Code sandbox (read-only uv cache).
+sync () { if [ -w /tmp ]; then uv sync -q; fi; }
 '''
 
 # Fail if CLAUDECODE is set
@@ -290,6 +243,7 @@ report-end-safe() {
 [private]
 _fail_if_claudecode:
     #!{{ bash_prolog }}
-    if [ "${CLAUDECODE:-}" != "" ]
-    then fail "⛔️ Denied: Protected recipe"
+    if [ "${CLAUDECODE:-}" != "" ]; then
+        printf '%s\n' '{{ style("error") }}⛔️ Denied: use agent recipes{{ NORMAL }}'
+        exit 1
     fi
