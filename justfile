@@ -12,17 +12,7 @@ help:
 
 # Full development workflow
 [no-exit-message]
-dev: format precommit
-
-# Run all checks
-[no-exit-message]
-precommit:
-    #!{{ bash_prolog }}
-    sync
-    run-checks
-    safe pytest-quiet
-    #run-line-limits
-    report-end-safe "Precommit"
+dev: format check test
 
 # Run test suite
 [no-exit-message]
@@ -30,38 +20,42 @@ test *ARGS:
     #!{{ bash_prolog }}
     sync
     pytest {{ ARGS }}
-    report-end-safe "Tests"
 
-# Check file line limits
+# Run token efficiency benchmark
 [no-exit-message]
-line-limits:
+benchmark MODULE="tests/examples.py":
     #!{{ bash_prolog }}
-    echo "Line limits check disabled"
-    exit
     sync
-    run-line-limits
-    report-end-safe "Line limits"
+    python scripts/benchmark.py {{ MODULE }}
 
-# Format, check with complexity disabled, test
 # Format, check with complexity disabled, test
 [no-exit-message]
 lint: format
     #!{{ bash_prolog }}
     sync
-    ruff_ignores=C901,PLR0904,PLR0911,PLR0912,PLR0913,PLR0914,PLR0915,PLR0916,PLR0917,PLR1701,PLR1702
-    report "ruff check" ruff check -q --ignore=$ruff_ignores
-    report "docformatter -c" docformatter -c src tests
-    report "mypy" mypy
-    safe pytest-quiet
-    report-end-safe "Lint"
+    show "# ruff check"
+    safe ruff check -q --ignore=C901
+
+    show "# docformatter -c"
+    safe docformatter -c src tests
+    show "# mypy"
+    safe mypy
+    show "# pytest"
+    safe pytest -q
+    end-safe
 
 # Check code style
 [no-exit-message]
 check:
     #!{{ bash_prolog }}
     sync
-    run-checks
-    report-end-safe "Checks"
+    show "# ruff check"
+    safe ruff check -q
+    show "# docformatter -c"
+    safe docformatter -c src tests
+    show "# mypy"
+    safe mypy
+    end-safe
 
 # Format code
 format:
@@ -224,7 +218,6 @@ bash_prolog := "/usr/bin/env bash\n" + \
     else { "set -euo pipefail" } ) + "\n" + '''
 COMMAND="''' + style('command') + '''"
 ERROR="''' + style('error') + '''"
-RED=$'\033[31m'
 GREEN=$'\033[32m'
 NORMAL="''' + NORMAL + '''"
 safe () { "$@" || status=false; }

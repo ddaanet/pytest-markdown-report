@@ -1,24 +1,4 @@
 {
-  "permissions": {
-    "allow": [
-      "Bash(git:*)",
-      "Bash(wc:*)",
-      "Bash(claudeutils:*)",
-      "Bash(just:*)",
-      "Bash(pytest:*)",
-      "Bash(ruff:*)",
-      "Bash(mypy:*)",
-      "Bash(pbcopy:*)",
-      "Bash(agent-core/bin/prepare-runbook.py:*)",
-      "Skill",
-      "WebSearch"
-    ],
-    "deny": [
-      "NotebookEdit",
-      "Bash(git push:*)",
-      "WebFetch(domain:http-intake.logs.*.datadoghq.com)"
-    ]
-  },
   "attribution": {
     "commit": "",
     "pr": ""
