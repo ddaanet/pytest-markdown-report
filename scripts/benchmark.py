@@ -31,7 +31,7 @@ def run_pytest(test_module: str, *args: str, disable_plugin: bool = False) -> st
 
 
 def count_tokens(content: str) -> int:
-    """Count tokens using claudeutils."""
+    """Count tokens using edify."""
     # Write to temp file
     temp_path = Path("tmp/benchmark_temp.txt")
     temp_path.parent.mkdir(exist_ok=True)
@@ -39,7 +39,7 @@ def count_tokens(content: str) -> int:
 
     # Count tokens
     result = subprocess.run(
-        ["claudeutils", "tokens", "sonnet", str(temp_path)],
+        ["edify", "tokens", "--model", "sonnet", str(temp_path)],
         check=False,
         capture_output=True,
         text=True,
