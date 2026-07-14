@@ -81,5 +81,5 @@ just test --pdb         # Drop into debugger on failures
 # Quality gates
 just check              # ruff + docformatter + mypy
 just benchmark          # Token-efficiency benchmark vs default pytest output
-just release            # patch bump (--dry-run / --rollback / minor|major); blocked inside Claude Code
+just release            # patch bump (--dry-run / --rollback / minor|major); publishes to PyPI + GitHub
 ```

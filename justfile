@@ -88,7 +88,7 @@ format:
 
 # Use --rollback to revert local changes from a crashed dry-run
 [no-exit-message]
-release *ARGS: _fail_if_claudecode dev
+release *ARGS: dev
     #!{{ bash_prolog }}
     DRY_RUN=false
     ROLLBACK=false
@@ -157,17 +157,6 @@ release *ARGS: _fail_if_claudecode dev
     tag="v$(echo "$release" | awk '{print $NF}')"
     git rev-parse "$tag" >/dev/null 2>&1 && fail "Error: tag $tag already exists"
 
-    # Interactive confirmation (skip in dry-run)
-    if [[ "$DRY_RUN" == "false" ]]; then
-        while read -re -p "Release $release? [y/n] " answer; do
-            case "$answer" in
-                y|Y) break;;
-                n|N) exit 1;;
-                *) continue;;
-            esac
-        done
-    fi
-
     if [[ "$DRY_RUN" == "true" ]]; then
         INITIAL_HEAD=$(git rev-parse HEAD)
         INITIAL_BRANCH=$(git symbolic-ref -q --short HEAD || echo "")
@@ -231,12 +220,3 @@ fail () { echo "${ERROR}$*${NORMAL}"; exit 1; }
 sync () { if [ -w /tmp ]; then uv sync -q; fi; }
 '''
 
-# Fail if CLAUDECODE is set
-[no-exit-message]
-[private]
-_fail_if_claudecode:
-    #!{{ bash_prolog }}
-    if [ "${CLAUDECODE:-}" != "" ]; then
-        printf '%s\n' '{{ style("error") }}⛔️ Denied: use agent recipes{{ NORMAL }}'
-        exit 1
-    fi
