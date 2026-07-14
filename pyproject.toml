@@ -99,6 +99,9 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
+"scripts/*.py" = [
+    "T201",     # print: benchmark writes its results table to stdout
+]
 "test_*.py" = [
     "S101",     # Assert statements
     "ARG",      # Unused function arguments
