@@ -102,33 +102,54 @@ def main() -> None:
         Path(filename).write_text(output)
 
     # Print results table
-
     baseline = results[0]["tokens"]
     tuned_baseline = results[1]["tokens"]
+
+    name_width = max(len(r["name"]) for r in results)
+    header = (
+        f"{'Format':<{name_width}}  {'Tokens':>7}  {'Lines':>6}  "
+        f"{'vs default':>12}  {'vs tuned':>10}"
+    )
+    print()
+    print(header)
+    print("-" * len(header))
 
     for result in results:
         tokens = result["tokens"]
 
-        # Calculate percentages
-        (
+        # Percentage deltas against the two pytest baselines
+        vs_baseline = (
             f"{((tokens - baseline) / baseline * 100):+.0f}%"
             if tokens != baseline
             else "baseline"
         )
-        (
+        vs_tuned = (
             f"{((tokens - tuned_baseline) / tuned_baseline * 100):+.0f}%"
             if tokens != tuned_baseline
             else "baseline"
         )
 
-    # Check if markdown is larger than pytest
+        print(
+            f"{result['name']:<{name_width}}  {tokens:>7}  {result['lines']:>6}  "
+            f"{vs_baseline:>12}  {vs_tuned:>10}"
+        )
+
+    # Headline comparison: markdown default vs default pytest
     markdown_default = results[3]["tokens"]
     pytest_default = results[0]["tokens"]
+    delta = (markdown_default - pytest_default) / pytest_default * 100
 
+    print()
     if markdown_default > pytest_default:
-        pass
+        print(
+            f"Markdown default uses {delta:+.0f}% MORE tokens than default pytest "
+            f"({markdown_default} vs {pytest_default})."
+        )
     else:
-        pass
+        print(
+            f"Markdown default saves {-delta:.0f}% tokens vs default pytest "
+            f"({markdown_default} vs {pytest_default})."
+        )
 
 
 if __name__ == "__main__":
