@@ -59,7 +59,6 @@ wrap-descriptions = 80
 [tool.ruff]
 output-format = "concise"
 unsafe-fixes = true
-exclude = ["agent-core"]
 
 [tool.ruff.lint]
 select = ["ALL"]

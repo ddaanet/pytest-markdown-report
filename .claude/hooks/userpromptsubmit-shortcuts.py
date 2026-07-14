@@ -1,1 +1,0 @@
-../../agent-core/hooks/userpromptsubmit-shortcuts.py

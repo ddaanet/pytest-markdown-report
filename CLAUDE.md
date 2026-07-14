@@ -1,7 +1,5 @@
 # Agent Instructions
 
-@agent-core/fragments/workflows-terminology.md
-
 ---
 
 ## Documentation Structure
@@ -18,32 +16,6 @@
 ### Current Work
 - @agents/session.md - Current session handoff context (update only on handoff)
 - @agents/learnings.md - Accumulated learnings (append-only, soft limit 80 lines)
-
----
-
-## Communication Rules
-
-@agent-core/fragments/communication.md
-
-@agent-core/fragments/token-economy.md
-
-@agent-core/fragments/commit-skill-usage.md
-
-@agent-core/fragments/no-estimates.md
-
-@agent-core/fragments/error-handling.md
-
-@agent-core/fragments/bash-strict-mode.md
-
-@agent-core/fragments/tmp-directory.md
-
-## Session Management
-
-@agent-core/fragments/execute-rule.md
-
-@agent-core/fragments/delegation.md
-
-@agent-core/fragments/tool-batching.md
 
 ---
 

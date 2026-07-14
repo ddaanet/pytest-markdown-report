@@ -1,1 +1,0 @@
-../../agent-core/hooks/pretooluse-symlink-redirect.sh
