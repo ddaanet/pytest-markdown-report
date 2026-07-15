@@ -143,3 +143,23 @@ Create separate sections for different test outcome categories.
 - **Scan efficiency**: Each section has clear purpose and meaning
 - **Priority order**: Critical issues (failures) first, informational (passes) last
 - **Consistency**: Matches pytest's own categorization of test outcomes
+
+## Test Names Mirror pytest Flags
+
+### Decision
+
+Keep the pytest flag's own casing in test names and locals, and silence the linter
+rather than rename: `# noqa: N802` on functions, `# noqa: N806` on variables.
+
+```python
+def test_rA_flag_shows_everything(...):  # noqa: N802
+    actual_vrN = ...  # noqa: N806
+```
+
+### Rationale
+
+The flags this plugin implements are case-sensitive and case-carrying: `-ra`, `-rA`,
+and `-rN` are three different behaviours. A test named `test_ra_flag_...` cannot say
+which one it covers, so pep8-naming's lowercase rule destroys the very distinction
+under test. Selective `noqa` keeps the tests self-documenting; renaming to satisfy
+the linter trades real clarity for a clean report.
