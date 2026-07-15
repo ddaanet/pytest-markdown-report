@@ -137,7 +137,9 @@ release *ARGS: dev
                 fi
             fi
 
-            version=$(git log -1 --format=%s | sed -E 's/.*Release //')
+            # Last field is the bare number; the subject carries an emoji and
+            # the package name, neither of which match dist/ filenames.
+            version=$(git log -1 --format=%s | awk '{print $NF}')
             current_branch=$(git symbolic-ref -q --short HEAD || echo "")
             cleanup_release "HEAD~1" "$current_branch" "$version"
             echo "${GREEN}✓${NORMAL} Rollback complete"
@@ -156,6 +158,13 @@ release *ARGS: dev
     release=$(uv version --bump "$BUMP" --dry-run)
     tag="v$(echo "$release" | awk '{print $NF}')"
     git rev-parse "$tag" >/dev/null 2>&1 && fail "Error: tag $tag already exists"
+    # Everything the external phase needs, checked before anything mutates:
+    # it pushes and tags before publishing, so a late failure strands a public
+    # tag with no PyPI artifact.
+    git rev-parse --abbrev-ref @{u} >/dev/null 2>&1 \
+        || fail "Error: no upstream for $current_branch. Run: git push -u origin $current_branch"
+    [[ -z "${UV_PUBLISH_TOKEN:-}" ]] && fail "Error: UV_PUBLISH_TOKEN not set. Get token from https://pypi.org/manage/account/token/"
+    gh auth status >/dev/null 2>&1 || fail "Error: not authenticated with GitHub"
 
     if [[ "$DRY_RUN" == "true" ]]; then
         INITIAL_HEAD=$(git rev-parse HEAD)
@@ -165,21 +174,21 @@ release *ARGS: dev
 
     # Perform local changes: version bump, commit, build
     visible uv version --bump "$BUMP"
-    version=$(uv version)
+    # --short is the bare number: it must match dist/ filenames and the tag.
+    version=$(uv version --short)
+    release_name=$(uv version)
     git add pyproject.toml uv.lock
-    visible git commit -m "🔖 Release $version"
-    tag="v$(uv version --short)"
+    visible git commit -m "🔖 Release $release_name"
+    tag="v$version"
     visible uv build
 
     if [[ "$DRY_RUN" == "true" ]]; then
-        # Verify external permissions
+        # Verify external permissions (presence checks already ran above)
         git push --dry-run || fail "Error: cannot push to git remote"
-        [[ -z "${UV_PUBLISH_TOKEN:-}" ]] && fail "Error: UV_PUBLISH_TOKEN not set. Get token from https://pypi.org/manage/account/token/"
-        uv publish --dry-run dist/* || fail "Error: cannot publish to PyPI"
-        gh auth status >/dev/null 2>&1 || fail "Error: not authenticated with GitHub"
+        uv publish --dry-run dist/*"$version"* || fail "Error: cannot publish to PyPI"
 
         echo ""
-        echo "${GREEN}✓${NORMAL} Dry-run complete: $version"
+        echo "${GREEN}✓${NORMAL} Dry-run complete: $release_name"
         echo "  ${GREEN}✓${NORMAL} Git push permitted"
         echo "  ${GREEN}✓${NORMAL} PyPI publish permitted"
         echo "  ${GREEN}✓${NORMAL} GitHub release permitted"
@@ -194,10 +203,12 @@ release *ARGS: dev
 
     # Perform external actions
     visible git push
-    visible git tag -a "$tag" -m "Release $version"
+    visible git tag -a "$tag" -m "Release $release_name"
     visible git push origin "$tag"
-    visible uv publish
-    visible gh release create "$tag" --title "$version" --generate-notes
+    # Publish only what was just built: bare `uv publish` globs all of dist/,
+    # which would re-upload stale artifacts from earlier versions.
+    visible uv publish dist/*"$version"*
+    visible gh release create "$tag" --title "$release_name" --generate-notes
     echo "${GREEN}✓${NORMAL} Release $tag complete"
 
 # Bash prolog
